@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Servicio {
+  id        String   @id @default(cuid())
+  nombre    String
+  precio    Float
+  duracion  Int      // en minutos
+  nota      String?  // ej: "Solo lunes y martes"
+  activo    Boolean  @default(true)
+  citas     Cita[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Cita {
+  id          String      @id @default(cuid())
+  fecha       DateTime
+  hora        String      // "11:00"
+  nombre      String
+  telefono    String
+  email       String?
+  servicio    Servicio    @relation(fields: [servicioId], references: [id])
+  servicioId  String
+  estado      EstadoCita  @default(PENDIENTE)
+  notas       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([fecha, hora])
+}
+
+model DiaCerrado {
+  id     String   @id @default(cuid())
+  fecha  DateTime @unique
+  motivo String?
+}
+
+model DiaAbierto {
+  id     String   @id @default(cuid())
+  fecha  DateTime @unique
+  motivo String?
+}
+
+enum EstadoCita {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}

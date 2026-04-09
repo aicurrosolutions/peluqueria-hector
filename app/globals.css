@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #131313;
+  color: #E5E2E1;
+  font-family: var(--font-manrope), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: #C9A84C;
+  color: #3D2E00;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0E0E0E; }
+::-webkit-scrollbar-thumb { background: #3A3939; }
+::-webkit-scrollbar-thumb:hover { background: #E6C364; }
+
+/* ── React Day Picker v9 — eliminar azul del sistema ── */
+:root {
+  --rdp-accent-color: #E6C364;
+  --rdp-accent-background-color: rgba(230, 195, 100, 0.12);
+  --rdp-day_button-border-radius: 0px;
+  --rdp-day_button-width: 40px;
+  --rdp-day_button-height: 40px;
+  --rdp-selected-border: none;
+  --rdp-focus-color: #E6C364;
+}
+
+/* Eliminar TODOS los outlines/rings azules del navegador en el calendario */
+.rdp *,
+.rdp *:focus,
+.rdp *:focus-visible,
+.rdp *:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Anular clase focused de react-day-picker */
+.rdp-no-focus,
+.rdp-no-focus * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Solución definitiva */
+button.rdp-day_button,
+button.rdp-day_button:focus,
+button.rdp-day_button:focus-visible,
+button.rdp-day_button:focus-within,
+button.rdp-button_next,
+button.rdp-button_next:focus,
+button.rdp-button_next:focus-visible,
+button.rdp-button_previous,
+button.rdp-button_previous:focus,
+button.rdp-button_previous:focus-visible {
+  outline: 0 !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.rdp-root {
+  color: #E5E2E1;
+}
+
+.rdp-month_caption {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #E5E2E1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.rdp-weekday {
+  color: #99907E;
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-family: var(--font-manrope), sans-serif;
+}
+
+.rdp-day_button {
+  color: #E5E2E1;
+  font-size: 0.8rem;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 500;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.rdp-day_button:hover:not([disabled]) {
+  background-color: #2A2A2A !important;
+  color: #E6C364 !important;
+}
+
+.rdp-selected .rdp-day_button {
+  background-color: #E6C364 !important;
+  color: #3D2E00 !important;
+  font-weight: 700;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.rdp-today:not(.rdp-selected) .rdp-day_button {
+  color: #E6C364 !important;
+  font-weight: 700;
+  border-bottom: 2px solid #E6C364;
+}
+
+.rdp-disabled .rdp-day_button {
+  opacity: 0.2 !important;
+  cursor: not-allowed !important;
+}
+
+.rdp-outside .rdp-day_button {
+  opacity: 0.15 !important;
+}
+
+/* Flechas de navegación de mes */
+.rdp-button_next,
+.rdp-button_previous {
+  color: #99907E !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.rdp-button_next:hover,
+.rdp-button_previous:hover {
+  color: #E6C364 !important;
+  background: transparent !important;
+}
+
+.rdp-button_next svg,
+.rdp-button_previous svg {
+  stroke: currentColor !important;
+  fill: currentColor !important;
+  color: inherit !important;
+}
+
+/* ── Admin layout offset para sidebar ── */
+.admin-main {
+  padding-left: 16rem;
+}
+
+@media (max-width: 768px) {
+  .admin-main { padding-left: 0; }
+}
+
+/* ── Admin calendario: días cerrados y abiertos ── */
+.dia-cerrado .rdp-day_button {
+  background-color: rgba(255, 100, 100, 0.15) !important;
+  color: #ff8080 !important;
+  border-bottom: 2px solid rgba(255, 100, 100, 0.4) !important;
+}
+
+.dia-cerrado .rdp-day_button:hover:not([disabled]) {
+  background-color: rgba(255, 100, 100, 0.25) !important;
+}
+
+.dia-abierto .rdp-day_button {
+  background-color: rgba(100, 210, 140, 0.15) !important;
+  color: #80d4a0 !important;
+  border-bottom: 2px solid rgba(100, 210, 140, 0.4) !important;
+}
+
+.dia-abierto .rdp-day_button:hover:not([disabled]) {
+  background-color: rgba(100, 210, 140, 0.25) !important;
+}
