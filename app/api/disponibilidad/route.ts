@@ -2,15 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generarSlots, esDiaCerrado, HORARIO_SEMANAL } from "@/lib/horarios";
 import { parseISO, startOfDay, endOfDay } from "date-fns";
+import { z } from "zod";
+
+const DisponibilidadSchema = z.object({
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha debe ser YYYY-MM-DD"),
+  duracion: z.coerce.number().int().min(5).max(480).default(30),
+});
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const fechaStr = searchParams.get("fecha");
-  const duracion = Number(searchParams.get("duracion") ?? 30);
 
-  if (!fechaStr) {
-    return NextResponse.json({ error: "Falta fecha" }, { status: 400 });
+  const parsed = DisponibilidadSchema.safeParse({
+    fecha: searchParams.get("fecha"),
+    duracion: searchParams.get("duracion"),
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Parámetros inválidos" },
+      { status: 400 }
+    );
   }
+
+  const { fecha: fechaStr, duracion } = parsed.data;
 
   const fecha = parseISO(fechaStr);
   const diaSemana = fecha.getDay();
@@ -31,21 +50,29 @@ export async function GET(req: NextRequest) {
   });
   if (diaCerrado) return NextResponse.json({ slots: [] });
 
-  // Obtener citas ya reservadas ese día
+  // Obtener citas con duración del servicio para comprobar solapamientos reales
   const citasDelDia = await prisma.cita.findMany({
     where: {
       fecha: { gte: startOfDay(fecha), lte: endOfDay(fecha) },
       estado: { not: "CANCELADA" },
     },
-    select: { hora: true },
+    select: { hora: true, servicio: { select: { duracion: true } } },
   });
-
-  const horasOcupadas = new Set(citasDelDia.map((c) => c.hora));
 
   // Para días abiertos por el admin sin horario propio (ej: domingo), usar horario de sábado
   const diaParaHorario = HORARIO_SEMANAL[diaSemana] ? diaSemana : 6;
   const todosSlots = generarSlots(duracion, diaParaHorario);
-  const disponibles = todosSlots.filter((s) => !horasOcupadas.has(s));
+
+  // Filtrar slots que se solapan con alguna cita existente
+  const disponibles = todosSlots.filter((slotHora) => {
+    const slotInicio = timeToMinutes(slotHora);
+    const slotFin = slotInicio + duracion;
+    return !citasDelDia.some((cita) => {
+      const citaInicio = timeToMinutes(cita.hora);
+      const citaFin = citaInicio + cita.servicio.duracion;
+      return citaInicio < slotFin && citaFin > slotInicio;
+    });
+  });
 
   return NextResponse.json({ slots: disponibles });
 }

@@ -21,7 +21,8 @@
     "react-day-picker": "^9.4.4",
     "react-dom": "^18",
     "resend": "^4.0.0",
-    "tailwind-merge": "^2.5.5"
+    "tailwind-merge": "^2.5.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20",

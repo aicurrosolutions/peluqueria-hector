@@ -16,6 +16,7 @@ export default function Home() {
           <a href="#servicios" className="text-primary border-b border-primary pb-0.5 font-headline uppercase tracking-widest text-xs">Servicios</a>
           <a href="#galeria" className="text-on-surface hover:text-primary transition-colors font-headline uppercase tracking-widest text-xs">Galería</a>
           <a href="#sobre-mi" className="text-on-surface hover:text-primary transition-colors font-headline uppercase tracking-widest text-xs">Sobre mí</a>
+          <a href="#contacto" className="text-on-surface hover:text-primary transition-colors font-headline uppercase tracking-widest text-xs">Contacto</a>
         </div>
         <Link href="/reservar" className="bg-primary text-on-primary px-8 py-3 font-headline font-bold uppercase tracking-wider hover:bg-primary-dim active:scale-95 transition-all text-sm">
           Reservar cita
@@ -149,6 +150,92 @@ export default function Home() {
                   <span className="text-[10px] uppercase tracking-widest text-outline font-label">{s.etiqueta}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* UBICACIÓN Y CONTACTO */}
+      <section id="contacto" className="py-32 bg-surface">
+        <div className="max-w-6xl mx-auto px-8 md:px-24">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+            <div>
+              <span className="text-primary font-headline tracking-[0.4em] uppercase text-xs mb-4 block">Encuéntranos</span>
+              <h2 className="text-5xl md:text-6xl font-headline font-bold tracking-tight text-on-surface">Ubicación</h2>
+            </div>
+            <div className="flex flex-col gap-4 text-right">
+              <a
+                href={`tel:${BUSINESS.telefono.replace(/\s/g, "")}`}
+                className="group flex items-center justify-end gap-3 hover:text-primary transition-colors"
+              >
+                <span className="font-headline font-bold text-on-surface text-lg group-hover:text-primary transition-colors">
+                  {BUSINESS.telefono}
+                </span>
+                <div className="w-9 h-9 border border-primary/30 flex items-center justify-center group-hover:bg-primary group-hover:border-primary transition-all">
+                  <svg className="w-4 h-4 text-primary group-hover:text-on-primary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                  </svg>
+                </div>
+              </a>
+              <p className="text-outline text-sm font-body font-light max-w-xs text-right leading-relaxed">
+                {BUSINESS.direccion}
+              </p>
+              <Link
+                href="/reservar"
+                className="mt-2 inline-block bg-primary text-on-primary px-8 py-3 font-headline font-bold uppercase tracking-wider hover:bg-primary-dim transition-all text-sm text-center"
+              >
+                Reservar cita
+              </Link>
+            </div>
+          </div>
+
+          {/* Mapa */}
+          <div className="relative w-full overflow-hidden" style={{ paddingBottom: "45%" }}>
+            <iframe
+              title="Ubicación Héctor Lacorte"
+              src="https://maps.google.com/maps?q=H%C3%A9ctor+Lacorte,+C.+Martinetes+7,+Sanl%C3%BAcar+la+Mayor,+Sevilla&output=embed&hl=es&z=16"
+              className="absolute inset-0 w-full h-full border-0 grayscale contrast-125"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+            {/* Overlay de marca */}
+            <div className="absolute top-4 left-4 bg-surface/95 backdrop-blur-sm px-4 py-3 pointer-events-none">
+              <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold">Barbería</p>
+              <p className="text-sm font-headline font-bold text-on-surface uppercase">{BUSINESS.name}</p>
+              <p className="text-[10px] text-outline font-label mt-0.5">{BUSINESS.direccion}</p>
+            </div>
+          </div>
+
+          {/* Info adicional */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-outline/5 mt-px">
+            <div className="bg-surface-container-low p-6 md:p-8">
+              <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold mb-3">Dirección</p>
+              <p className="text-sm font-body text-on-surface leading-relaxed">{BUSINESS.direccion}</p>
+              <a
+                href={`https://maps.google.com/maps?q=H%C3%A9ctor+Lacorte,+C.+Martinetes+7,+Sanl%C3%BAcar+la+Mayor`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-3 text-[10px] uppercase tracking-widest text-primary hover:underline font-label"
+              >
+                Abrir en Google Maps →
+              </a>
+            </div>
+            <div className="bg-surface-container-low p-6 md:p-8">
+              <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold mb-3">Contacto</p>
+              <a href={`tel:${BUSINESS.telefono.replace(/\s/g, "")}`} className="text-sm font-body text-on-surface hover:text-primary transition-colors block">{BUSINESS.telefono}</a>
+              <a href={`https://instagram.com/${BUSINESS.instagram}`} target="_blank" rel="noopener noreferrer" className="text-sm font-body text-on-surface hover:text-primary transition-colors block mt-1">@{BUSINESS.instagram}</a>
+            </div>
+            <div className="bg-surface-container-low p-6 md:p-8">
+              <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold mb-3">Horario</p>
+              <div className="space-y-1">
+                {HORARIO_VISIBLE.slice(0, 4).map((h) => (
+                  <div key={h.dia} className="flex justify-between text-xs font-label">
+                    <span className="text-outline uppercase tracking-wider">{h.dia}</span>
+                    <span className={h.horas === "Cerrado" ? "text-outline/40" : "text-on-surface"}>{h.horas}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

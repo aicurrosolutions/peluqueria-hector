@@ -41,15 +41,15 @@ export default function LoginCliente() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-12">
           <div className="w-20 h-20 bg-surface-container mb-6 flex items-center justify-center relative overflow-hidden">
-            <Image src="/logo.png" alt="HL" fill className="object-contain invert opacity-40 p-4" />
+            <Image src="/logo.png" alt="HL" fill className="object-contain opacity-80 p-4" />
           </div>
           <h1 className="font-headline text-2xl font-black text-primary uppercase tracking-tighter">{BUSINESS.name}</h1>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-outline mt-1 font-label">Panel de Control</p>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-on-surface-variant mt-1 font-label">Panel de Control</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-8">
           <div className="group">
-            <label className="font-label text-[10px] uppercase tracking-[0.3em] text-outline group-focus-within:text-primary transition-colors block mb-2">
+            <label className="font-label text-[10px] uppercase tracking-[0.3em] text-on-surface-variant group-focus-within:text-primary transition-colors block mb-2">
               Usuario
             </label>
             <input
@@ -57,12 +57,12 @@ export default function LoginCliente() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
-              className="w-full bg-transparent border-0 border-b border-outline focus:border-primary focus:ring-0 px-0 py-3 font-headline text-xl uppercase placeholder:text-surface-container-highest text-on-surface outline-none transition-all"
+              className="w-full bg-transparent border-0 border-b border-outline focus:border-primary focus:ring-0 px-0 py-3 font-headline text-xl uppercase placeholder:text-outline/50 text-on-surface outline-none transition-all"
               placeholder="HECTOR"
             />
           </div>
           <div className="group">
-            <label className="font-label text-[10px] uppercase tracking-[0.3em] text-outline group-focus-within:text-primary transition-colors block mb-2">
+            <label className="font-label text-[10px] uppercase tracking-[0.3em] text-on-surface-variant group-focus-within:text-primary transition-colors block mb-2">
               Contraseña
             </label>
             <input
@@ -70,7 +70,7 @@ export default function LoginCliente() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
-              className="w-full bg-transparent border-0 border-b border-outline focus:border-primary focus:ring-0 px-0 py-3 font-headline text-xl placeholder:text-surface-container-highest text-on-surface outline-none transition-all"
+              className="w-full bg-transparent border-0 border-b border-outline focus:border-primary focus:ring-0 px-0 py-3 font-headline text-xl placeholder:text-outline/50 text-on-surface outline-none transition-all"
               placeholder="••••••••"
             />
           </div>

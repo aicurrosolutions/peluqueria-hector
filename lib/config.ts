@@ -20,13 +20,13 @@ export const BUSINESS = {
   instagram: "hector.lacorte",
 
   // Teléfono (opcional, déjalo vacío si no se quiere mostrar)
-  telefono: "",
+  telefono: "605 29 28 90",
 
   // Dirección física (opcional)
-  direccion: "",
+  direccion: "C. Martinetes, 7, Local 10, 41800 Sanlúcar la Mayor, Sevilla",
 
   // Ciudad (para el SEO y legal)
-  ciudad: "España",
+  ciudad: "Sanlúcar la Mayor, Sevilla",
 
   // URL pública de la web (sin barra final)
   url: "https://hectorlacorte.com",

@@ -1,9 +1,11 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET ?? "fallback-secret"
-);
+function getSecret(): Uint8Array {
+  const s = process.env.NEXTAUTH_SECRET;
+  if (!s) throw new Error("NEXTAUTH_SECRET is not set");
+  return new TextEncoder().encode(s);
+}
 
 const COOKIE_NAME = "hl_admin_token";
 
@@ -11,12 +13,12 @@ export async function signAdminToken() {
   return await new SignJWT({ role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("8h")
-    .sign(SECRET);
+    .sign(getSecret());
 }
 
 export async function verifyAdminToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, SECRET);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload;
   } catch {
     return null;

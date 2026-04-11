@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { DayPicker, type DayButtonProps } from "react-day-picker";
@@ -31,6 +31,8 @@ type Paso = "servicio" | "fecha" | "hora" | "datos" | "confirmado";
 export default function ReservarCliente() {
   const [paso, setPaso] = useState<Paso>("servicio");
   const [servicios, setServicios] = useState<Servicio[]>([]);
+  const refFecha = useRef<HTMLElement>(null);
+  const refDatos = useRef<HTMLElement>(null);
   const [servicioSel, setServicioSel] = useState<Servicio | null>(null);
   const [fechaSel, setFechaSel] = useState<Date | undefined>();
   const [horaSel, setHoraSel] = useState<string | null>(null);
@@ -44,6 +46,15 @@ export default function ReservarCliente() {
   const [citaId, setCitaId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [diasAbiertos, setDiasAbiertos] = useState<Date[]>([]);
+
+  // Scroll al siguiente paso cuando avanza el embudo
+  useEffect(() => {
+    if (paso === "fecha" || paso === "hora") {
+      setTimeout(() => refFecha.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    } else if (paso === "datos") {
+      setTimeout(() => refDatos.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
+  }, [paso]);
 
   useEffect(() => {
     fetch("/api/servicios").then((r) => r.json()).then(setServicios).catch(() => {});
@@ -89,9 +100,14 @@ export default function ReservarCliente() {
           email: email || undefined,
         }),
       });
-      const data = await res.json();
+      let data: { id?: string; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Error de conexión. Inténtalo de nuevo.");
+      }
       if (!res.ok) throw new Error(data.error ?? "Error al reservar");
-      setCitaId(data.id);
+      setCitaId(data.id ?? null);
       setPaso("confirmado");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error inesperado");
@@ -184,7 +200,16 @@ export default function ReservarCliente() {
                 {servicios.map((s) => (
                   <button
                     key={s.id}
-                    onClick={() => { setServicioSel(s); if (paso === "servicio") setPaso("fecha"); }}
+                    onClick={() => {
+                      const different = servicioSel?.id !== s.id;
+                      setServicioSel(s);
+                      if (paso === "servicio") {
+                        setPaso("fecha");
+                      } else if (different && paso === "datos") {
+                        setHoraSel(null);
+                        setPaso("hora");
+                      }
+                    }}
                     className={`w-full group flex items-center justify-between p-8 md:p-10 cursor-pointer transition-colors duration-300 text-left ${
                       servicioSel?.id === s.id
                         ? "bg-surface-container-high border-l-4 border-primary"
@@ -212,7 +237,7 @@ export default function ReservarCliente() {
 
             {/* PASO 2: FECHA & HORA */}
             {(paso === "fecha" || paso === "hora" || paso === "datos") && (
-              <section>
+              <section ref={refFecha}>
                 <div className="mb-10">
                   <span className="text-primary font-label text-xs uppercase tracking-[0.4em] mb-4 block">Paso 2 · Disponibilidad</span>
                   <h2 className="font-headline text-5xl md:text-6xl font-bold tracking-tight text-on-surface uppercase leading-none">
@@ -269,7 +294,7 @@ export default function ReservarCliente() {
 
             {/* PASO 3: DATOS */}
             {paso === "datos" && (
-              <section>
+              <section ref={refDatos}>
                 <div className="mb-10">
                   <span className="text-primary font-label text-xs uppercase tracking-[0.4em] mb-4 block">Paso 3 · Tus datos</span>
                   <h2 className="font-headline text-5xl md:text-6xl font-bold tracking-tight text-on-surface uppercase leading-none">
@@ -304,7 +329,7 @@ export default function ReservarCliente() {
 
                   <button
                     type="submit"
-                    disabled={!nombre || !telefono || !aceptaPrivacidad || enviando}
+                    disabled={!fechaSel || !horaSel || !nombre || !telefono || !aceptaPrivacidad || enviando}
                     className="w-full bg-primary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-5 hover:bg-primary-dim transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {enviando ? "Confirmando..." : "Confirmar Cita"}
@@ -358,7 +383,7 @@ export default function ReservarCliente() {
                     {paso === "datos" ? (
                       <button
                         onClick={handleConfirmar}
-                        disabled={!nombre || !telefono || !aceptaPrivacidad || enviando}
+                        disabled={!fechaSel || !horaSel || !nombre || !telefono || !aceptaPrivacidad || enviando}
                         className="w-full bg-primary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-4 hover:bg-primary-dim transition-all disabled:opacity-30"
                       >
                         {enviando ? "Confirmando..." : "Confirmar"}
