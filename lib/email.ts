@@ -86,6 +86,42 @@ export async function notificarBarber(datos: DatosEmail & { telefono: string }) 
   });
 }
 
+export async function enviarModificacion(datos: DatosEmail) {
+  const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+
+  await resend.emails.send({
+    from: `${BUSINESS.name} <${FROM}>`,
+    to: datos.email,
+    subject: `Cita modificada — ${BUSINESS.name}`,
+    html: `
+      <div style="background:#0a0a0a;color:#F5F0EB;font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:40px 32px;">
+        <div style="text-align:center;margin-bottom:32px;">
+          <h1 style="color:#C9A84C;font-size:28px;letter-spacing:4px;text-transform:uppercase;margin:0;">${BUSINESS.name}</h1>
+          <p style="color:#888;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:4px 0 0;">${BUSINESS.role}</p>
+        </div>
+        <div style="border-top:1px solid #C9A84C33;border-bottom:1px solid #C9A84C33;padding:24px 0;margin:24px 0;">
+          <h2 style="color:#F5F0EB;font-size:18px;margin:0 0 16px;">Tu cita ha sido modificada</h2>
+          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Servicio:</strong> ${datos.servicio}</p>
+          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Nueva fecha:</strong> ${fechaFormato}</p>
+          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Nueva hora:</strong> ${datos.hora}</p>
+          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Nombre:</strong> ${datos.nombre}</p>
+        </div>
+        <p style="color:#888;font-size:13px;margin-top:24px;">
+          Si necesitas volver a modificar o cancelar tu cita (mínimo 24h antes):
+        </p>
+        <p style="margin:12px 0;">
+          <a href="${BUSINESS.url}/cancelar/${datos.citaId}" style="color:#C9A84C;font-size:13px;">
+            ${BUSINESS.url}/cancelar/${datos.citaId}
+          </a>
+        </p>
+        <p style="color:#555;font-size:11px;margin-top:32px;text-align:center;">
+          ${BUSINESS.name} · @${BUSINESS.instagram}
+        </p>
+      </div>
+    `,
+  });
+}
+
 export async function enviarCancelacion(datos: Omit<DatosEmail, "citaId">) {
   const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
 

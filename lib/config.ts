@@ -29,7 +29,7 @@ export const BUSINESS = {
   ciudad: "Sanlúcar la Mayor, Sevilla",
 
   // URL pública de la web (sin barra final)
-  url: "https://hectorlacorte.com",
+  url: "https://peluqueria-hector.vercel.app",
 } as const;
 
 // ──────────────────────────────────────────
