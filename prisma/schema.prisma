@@ -50,6 +50,16 @@ model Cita {
   @@unique([fecha, hora])
 }
 
+model HorarioFranja {
+  id        String  @id @default(cuid())
+  diaSemana Int     // 0=domingo, 1=lunes, ..., 6=sábado
+  inicio    String  // "10:00"
+  fin       String  // "14:00"
+  activo    Boolean @default(true)
+
+  @@index([diaSemana])
+}
+
 model DiaCerrado {
   id     String   @id @default(cuid())
   fecha  DateTime @unique

@@ -48,31 +48,6 @@ export const SOBRE_MI = {
 } as const;
 
 // ──────────────────────────────────────────
-// HORARIO VISIBLE EN LANDING Y FOOTER
-// (Los slots reales se configuran en lib/horarios.ts)
-// ──────────────────────────────────────────
-export const HORARIO_VISIBLE = [
-  { dia: "Lunes",     horas: "16:30 – 20:30" },
-  { dia: "Martes",    horas: "10:00 – 14:00 · 16:40 – 20:00" },
-  { dia: "Miércoles", horas: "10:00 – 14:00 · 16:40 – 20:00" },
-  { dia: "Jueves",    horas: "10:00 – 14:00 · 16:30 – 20:00" },
-  { dia: "Viernes",   horas: "10:00 – 13:30 · 15:30 – 20:00" },
-  { dia: "Sábado",    horas: "09:30 – 13:00" },
-  { dia: "Domingo",   horas: "Cerrado" },
-] as const;
-
-// ──────────────────────────────────────────
-// SERVICIOS DE LA LANDING (solo para mostrar)
-// Los servicios reales se gestionan desde el panel admin
-// ──────────────────────────────────────────
-export const SERVICIOS_LANDING = [
-  { nombre: "Corte & Asesoramiento", precio: 12, duracion: 30, descripcion: "Corte personalizado con consultoría de imagen.", nota: null },
-  { nombre: "Corte",                 precio: 10, duracion: 30, descripcion: "Corte clásico profesional.", nota: "Solo lunes y martes" },
-  { nombre: "Corte + Barba",         precio: 15, duracion: 35, descripcion: "Corte completo combinado con perfilado y arreglo de barba.", nota: null },
-  { nombre: "Corte VIP",             precio: 18, duracion: 40, descripcion: "Experiencia completa: corte, barba, asesoramiento y cejas.", nota: "Servicio premium" },
-] as const;
-
-// ──────────────────────────────────────────
 // SEO / META
 // ──────────────────────────────────────────
 export const SEO = {

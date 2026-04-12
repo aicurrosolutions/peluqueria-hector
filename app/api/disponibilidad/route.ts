@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generarSlots, esDiaCerrado, HORARIO_SEMANAL } from "@/lib/horarios";
+import { generarSlots, HORARIO_DEFAULT } from "@/lib/horarios";
 import { parseISO, startOfDay, endOfDay } from "date-fns";
 import { z } from "zod";
 
@@ -30,27 +30,37 @@ export async function GET(req: NextRequest) {
   }
 
   const { fecha: fechaStr, duracion } = parsed.data;
-
   const fecha = parseISO(fechaStr);
   const diaSemana = fecha.getDay();
 
-  // Verificar si el admin ha abierto este día expresamente (ej: finde especial)
-  const diaAbierto = await prisma.diaAbierto.findUnique({
-    where: { fecha: startOfDay(fecha) },
+  // Verificar si el admin ha abierto este día expresamente
+  const [diaAbierto, diaCerrado] = await Promise.all([
+    prisma.diaAbierto.findUnique({ where: { fecha: startOfDay(fecha) } }),
+    prisma.diaCerrado.findUnique({ where: { fecha: startOfDay(fecha) } }),
+  ]);
+
+  if (diaCerrado) return NextResponse.json({ slots: [] });
+
+  // Obtener franjas del horario desde BD
+  let franjas = await prisma.horarioFranja.findMany({
+    where: { diaSemana, activo: true },
+    orderBy: { inicio: "asc" },
+    select: { inicio: true, fin: true },
   });
 
-  // Si el día es cerrado por defecto Y no está abierto por el admin → sin slots
-  if (esDiaCerrado(diaSemana) && !diaAbierto) {
+  // Si el día no tiene horario en BD pero el admin lo abrió expresamente,
+  // usar el horario por defecto del sábado como fallback
+  if (!franjas.length && diaAbierto) {
+    const fallback = HORARIO_DEFAULT[6] ?? [];
+    franjas = fallback.map((f) => ({ inicio: f.inicio, fin: f.fin }));
+  }
+
+  // Si no hay franjas y no está abierto expresamente → cerrado
+  if (!franjas.length && !diaAbierto) {
     return NextResponse.json({ slots: [] });
   }
 
-  // Verificar si está marcado como día cerrado por el admin
-  const diaCerrado = await prisma.diaCerrado.findUnique({
-    where: { fecha: startOfDay(fecha) },
-  });
-  if (diaCerrado) return NextResponse.json({ slots: [] });
-
-  // Obtener citas con duración del servicio para comprobar solapamientos reales
+  // Citas del día para filtrar solapamientos
   const citasDelDia = await prisma.cita.findMany({
     where: {
       fecha: { gte: startOfDay(fecha), lte: endOfDay(fecha) },
@@ -59,11 +69,8 @@ export async function GET(req: NextRequest) {
     select: { hora: true, servicio: { select: { duracion: true } } },
   });
 
-  // Para días abiertos por el admin sin horario propio (ej: domingo), usar horario de sábado
-  const diaParaHorario = HORARIO_SEMANAL[diaSemana] ? diaSemana : 6;
-  const todosSlots = generarSlots(duracion, diaParaHorario);
+  const todosSlots = generarSlots(duracion, franjas);
 
-  // Filtrar slots que se solapan con alguna cita existente
   const disponibles = todosSlots.filter((slotHora) => {
     const slotInicio = timeToMinutes(slotHora);
     const slotFin = slotInicio + duracion;

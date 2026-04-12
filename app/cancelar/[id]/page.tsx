@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { DayPicker, type DayButtonProps } from "react-day-picker";
-import { format, parseISO, isBefore, startOfDay, isSameDay } from "date-fns";
+import { format, parseISO, isBefore, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { BUSINESS } from "@/lib/config";
 import { X, Check, AlertTriangle, Calendar, ArrowLeft } from "lucide-react";
@@ -45,7 +45,7 @@ export default function CancelarCitaPage() {
   const [errorCancelar, setErrorCancelar] = useState("");
 
   // Cambiar — pasos
-  const [diasAbiertos, setDiasAbiertos] = useState<Date[]>([]);
+  const [horario, setHorario] = useState<{ diasSemanaAbiertos: number[]; diasEspecialesAbiertos: string[]; diasEspecialesCerrados: string[] }>({ diasSemanaAbiertos: [], diasEspecialesAbiertos: [], diasEspecialesCerrados: [] });
   const [fechaSel, setFechaSel] = useState<Date | undefined>();
   const [horaSel, setHoraSel] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[]>([]);
@@ -76,12 +76,7 @@ export default function CancelarCitaPage() {
       .catch(() => setErrorCarga("No se pudo cargar la cita"))
       .finally(() => setCargando(false));
 
-    fetch("/api/dias-abiertos")
-      .then((r) => r.json())
-      .then((data: { fecha: string }[]) =>
-        setDiasAbiertos(data.map((d) => parseISO(d.fecha)))
-      )
-      .catch(() => {});
+    fetch("/api/horario").then((r) => r.json()).then(setHorario).catch(() => {});
   }, [id]);
 
   // Scroll a sección de acción cuando el usuario elige
@@ -115,8 +110,10 @@ export default function CancelarCitaPage() {
 
   const isDiaDeshabilitado = (date: Date) => {
     if (isBefore(date, startOfDay(new Date()))) return true;
-    const esFinde = date.getDay() === 0 || date.getDay() === 6;
-    if (esFinde && !diasAbiertos.some((d) => isSameDay(d, date))) return true;
+    const fechaStr = format(date, "yyyy-MM-dd");
+    if (horario.diasEspecialesCerrados.includes(fechaStr)) return true;
+    if (horario.diasEspecialesAbiertos.includes(fechaStr)) return false;
+    if (!horario.diasSemanaAbiertos.includes(date.getDay())) return true;
     return false;
   };
 

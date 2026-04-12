@@ -3,14 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Scissors, Calendar, BarChart2, LogOut, Plus } from "lucide-react";
+import { LayoutDashboard, Scissors, Calendar, BarChart2, LogOut, Plus, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BUSINESS } from "@/lib/config";
 
 const NAV = [
-  { href: "/admin/dashboard", label: "Agenda", icon: LayoutDashboard },
-  { href: "/admin/servicios", label: "Servicios", icon: Scissors },
-  { href: "/admin/calendario", label: "Calendario", icon: Calendar },
+  { href: "/admin/dashboard",    label: "Agenda",       icon: LayoutDashboard },
+  { href: "/admin/servicios",    label: "Servicios",    icon: Scissors },
+  { href: "/admin/horario",      label: "Horario",      icon: Clock },
+  { href: "/admin/calendario",   label: "Calendario",   icon: Calendar },
   { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart2 },
 ];
 

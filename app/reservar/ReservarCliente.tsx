@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { DayPicker, type DayButtonProps } from "react-day-picker";
-import { format, isBefore, startOfDay, isSameDay, parseISO } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { ArrowLeft, Check, Calendar, Clock } from "lucide-react";
 import { BUSINESS } from "@/lib/config";
@@ -45,7 +45,7 @@ export default function ReservarCliente() {
   const [enviando, setEnviando] = useState(false);
   const [citaId, setCitaId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [diasAbiertos, setDiasAbiertos] = useState<Date[]>([]);
+  const [horario, setHorario] = useState<{ diasSemanaAbiertos: number[]; diasEspecialesAbiertos: string[]; diasEspecialesCerrados: string[] }>({ diasSemanaAbiertos: [], diasEspecialesAbiertos: [], diasEspecialesCerrados: [] });
 
   // Scroll al siguiente paso cuando avanza el embudo
   useEffect(() => {
@@ -58,10 +58,7 @@ export default function ReservarCliente() {
 
   useEffect(() => {
     fetch("/api/servicios").then((r) => r.json()).then(setServicios).catch(() => {});
-    fetch("/api/dias-abiertos")
-      .then((r) => r.json())
-      .then((data: { fecha: string }[]) => setDiasAbiertos(data.map((d) => parseISO(d.fecha))))
-      .catch(() => {});
+    fetch("/api/horario").then((r) => r.json()).then(setHorario).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -76,10 +73,11 @@ export default function ReservarCliente() {
   }, [fechaSel, servicioSel]);
 
   const isDiaDeshabilitado = (date: Date) => {
-    const hoy = startOfDay(new Date());
-    if (isBefore(date, hoy)) return true;
-    const esFinde = date.getDay() === 0 || date.getDay() === 6;
-    if (esFinde && !diasAbiertos.some((d) => isSameDay(d, date))) return true;
+    if (isBefore(date, startOfDay(new Date()))) return true;
+    const fechaStr = format(date, "yyyy-MM-dd");
+    if (horario.diasEspecialesCerrados.includes(fechaStr)) return true;
+    if (horario.diasEspecialesAbiertos.includes(fechaStr)) return false;
+    if (!horario.diasSemanaAbiertos.includes(date.getDay())) return true;
     return false;
   };
 

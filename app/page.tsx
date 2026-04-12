@@ -1,8 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BUSINESS, HORARIO_VISIBLE, SERVICIOS_LANDING, SOBRE_MI } from "@/lib/config";
+import { BUSINESS, SOBRE_MI } from "@/lib/config";
+import { prisma } from "@/lib/prisma";
+import { formatearFranjas, DIAS_SEMANA } from "@/lib/horarios";
 
-export default function Home() {
+// Orden de visualización del horario: Lun → Sáb → Dom
+const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
+
+export default async function Home() {
+  // Servicios y horario desde BD — si falla, usa arrays vacíos (no rompe la web)
+  const [servicios, franjasBD] = await Promise.all([
+    prisma.servicio.findMany({ where: { activo: true }, orderBy: { createdAt: "asc" } }).catch(() => []),
+    prisma.horarioFranja.findMany({ where: { activo: true }, orderBy: { inicio: "asc" } }).catch(() => []),
+  ]);
+
+  // Agrupar franjas por día para mostrar en footer/contacto
+  const horarioPorDia = ORDEN_DIAS.map((dia) => ({
+    dia,
+    nombre: DIAS_SEMANA[dia],
+    franjas: franjasBD.filter((f) => f.diaSemana === dia),
+  }));
+
   return (
     <main className="min-h-screen bg-background text-on-surface">
 
@@ -65,22 +83,27 @@ export default function Home() {
           </p>
         </div>
         <div className="grid grid-cols-1 gap-px bg-outline/10">
-          {SERVICIOS_LANDING.map((s) => (
-            <div key={s.nombre} className="group relative flex flex-col md:flex-row justify-between items-center bg-surface-container-lowest p-10 md:p-12 hover:bg-surface-container transition-colors duration-500">
+          {servicios.map((s) => (
+            <div key={s.id} className="group relative flex flex-col md:flex-row justify-between items-center bg-surface-container-lowest p-10 md:p-12 hover:bg-surface-container transition-colors duration-500">
               <div className="flex flex-col gap-2">
                 <h3 className="text-2xl md:text-3xl font-headline font-bold text-on-surface">{s.nombre}</h3>
-                <p className="text-outline text-sm font-body font-light max-w-md">{s.descripcion}</p>
-                <div className="flex items-center gap-4 mt-1">
-                  <span className="flex items-center gap-2 text-outline text-xs uppercase tracking-widest font-label font-bold">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    {s.duracion} min
-                  </span>
-                  {s.nota && (
+                {s.nota && (
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="flex items-center gap-2 text-outline text-xs uppercase tracking-widest font-label font-bold">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {s.duracion} min
+                    </span>
                     <span className="bg-primary/10 text-primary px-3 py-1 text-[10px] uppercase font-bold tracking-tight font-label">
                       {s.nota}
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
+                {!s.nota && (
+                  <span className="flex items-center gap-2 text-outline text-xs uppercase tracking-widest font-label font-bold mt-1">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    {s.duracion} min
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-10 mt-8 md:mt-0">
                 <span className="text-4xl md:text-5xl font-headline font-bold text-primary">{s.precio}€</span>
@@ -90,6 +113,11 @@ export default function Home() {
               </div>
             </div>
           ))}
+          {servicios.length === 0 && (
+            <div className="bg-surface-container-lowest p-12 text-center">
+              <p className="text-outline text-sm font-body">Servicios disponibles próximamente.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -99,29 +127,17 @@ export default function Home() {
           <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-4">Nuestros Cortes</h2>
           <div className="h-1 w-24 bg-primary" />
         </div>
-        {/* Mobile: 2 columnas uniformes */}
         <div className="grid grid-cols-2 gap-2 px-4 md:hidden">
           {["/galeria-1.png", "/galeria-2.png", "/galeria-3.png", "/galeria-4.png"].map((src, i) => (
             <div key={i} className="aspect-[3/4] relative overflow-hidden group">
-              <Image
-                src={src}
-                alt={`Corte ${i + 1} - ${BUSINESS.name}`}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
+              <Image src={src} alt={`Corte ${i + 1} - ${BUSINESS.name}`} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
         </div>
-        {/* Desktop: 4 columnas uniformes */}
         <div className="hidden md:grid grid-cols-4 gap-3 px-4">
           {["/galeria-1.png", "/galeria-2.png", "/galeria-3.png", "/galeria-4.png"].map((src, i) => (
             <div key={i} className="aspect-[3/4] relative overflow-hidden group">
-              <Image
-                src={src}
-                alt={`Corte ${i + 1} - ${BUSINESS.name}`}
-                fill
-                className="object-cover object-top group-hover:scale-105 transition-transform duration-700"
-              />
+              <Image src={src} alt={`Corte ${i + 1} - ${BUSINESS.name}`} fill className="object-cover object-top group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
         </div>
@@ -164,32 +180,21 @@ export default function Home() {
               <h2 className="text-5xl md:text-6xl font-headline font-bold tracking-tight text-on-surface">Ubicación</h2>
             </div>
             <div className="flex flex-col gap-4 text-right">
-              <a
-                href={`tel:${BUSINESS.telefono.replace(/\s/g, "")}`}
-                className="group flex items-center justify-end gap-3 hover:text-primary transition-colors"
-              >
-                <span className="font-headline font-bold text-on-surface text-lg group-hover:text-primary transition-colors">
-                  {BUSINESS.telefono}
-                </span>
+              <a href={`tel:${BUSINESS.telefono.replace(/\s/g, "")}`} className="group flex items-center justify-end gap-3 hover:text-primary transition-colors">
+                <span className="font-headline font-bold text-on-surface text-lg group-hover:text-primary transition-colors">{BUSINESS.telefono}</span>
                 <div className="w-9 h-9 border border-primary/30 flex items-center justify-center group-hover:bg-primary group-hover:border-primary transition-all">
                   <svg className="w-4 h-4 text-primary group-hover:text-on-primary" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.08 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.18 6.18l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
                   </svg>
                 </div>
               </a>
-              <p className="text-outline text-sm font-body font-light max-w-xs text-right leading-relaxed">
-                {BUSINESS.direccion}
-              </p>
-              <Link
-                href="/reservar"
-                className="mt-2 inline-block bg-primary text-on-primary px-8 py-3 font-headline font-bold uppercase tracking-wider hover:bg-primary-dim transition-all text-sm text-center"
-              >
+              <p className="text-outline text-sm font-body font-light max-w-xs text-right leading-relaxed">{BUSINESS.direccion}</p>
+              <Link href="/reservar" className="mt-2 inline-block bg-primary text-on-primary px-8 py-3 font-headline font-bold uppercase tracking-wider hover:bg-primary-dim transition-all text-sm text-center">
                 Reservar cita
               </Link>
             </div>
           </div>
 
-          {/* Mapa */}
           <div className="relative w-full overflow-hidden" style={{ paddingBottom: "45%" }}>
             <iframe
               title="Ubicación Héctor Lacorte"
@@ -199,7 +204,6 @@ export default function Home() {
               referrerPolicy="no-referrer-when-downgrade"
               allowFullScreen
             />
-            {/* Overlay de marca */}
             <div className="absolute top-4 left-4 bg-surface/95 backdrop-blur-sm px-4 py-3 pointer-events-none">
               <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold">Barbería</p>
               <p className="text-sm font-headline font-bold text-on-surface uppercase">{BUSINESS.name}</p>
@@ -207,17 +211,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Info adicional */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-outline/5 mt-px">
             <div className="bg-surface-container-low p-6 md:p-8">
               <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold mb-3">Dirección</p>
               <p className="text-sm font-body text-on-surface leading-relaxed">{BUSINESS.direccion}</p>
-              <a
-                href={`https://maps.google.com/maps?q=H%C3%A9ctor+Lacorte,+C.+Martinetes+7,+Sanl%C3%BAcar+la+Mayor`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-3 text-[10px] uppercase tracking-widest text-primary hover:underline font-label"
-              >
+              <a href={`https://maps.google.com/maps?q=H%C3%A9ctor+Lacorte,+C.+Martinetes+7,+Sanl%C3%BAcar+la+Mayor`} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-[10px] uppercase tracking-widest text-primary hover:underline font-label">
                 Abrir en Google Maps →
               </a>
             </div>
@@ -229,10 +227,12 @@ export default function Home() {
             <div className="bg-surface-container-low p-6 md:p-8">
               <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold mb-3">Horario</p>
               <div className="space-y-1">
-                {HORARIO_VISIBLE.slice(0, 4).map((h) => (
-                  <div key={h.dia} className="flex justify-between text-xs font-label">
-                    <span className="text-outline uppercase tracking-wider">{h.dia}</span>
-                    <span className={h.horas === "Cerrado" ? "text-outline/40" : "text-on-surface"}>{h.horas}</span>
+                {horarioPorDia.slice(0, 4).map(({ dia, nombre, franjas }) => (
+                  <div key={dia} className="flex justify-between text-xs font-label">
+                    <span className="text-outline uppercase tracking-wider">{nombre}</span>
+                    <span className={!franjas.length ? "text-outline/40" : "text-on-surface"}>
+                      {formatearFranjas(franjas)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -263,16 +263,16 @@ export default function Home() {
       <footer className="bg-surface-container-lowest grid grid-cols-1 md:grid-cols-3 gap-12 px-8 md:px-12 py-20 border-t border-outline/5">
         <div className="flex flex-col gap-6">
           <span className="text-lg font-black text-on-surface font-headline uppercase">{BUSINESS.name}</span>
-          <p className="text-outline font-body font-light leading-relaxed text-xs max-w-xs">
-            {BUSINESS.description}
-          </p>
+          <p className="text-outline font-body font-light leading-relaxed text-xs max-w-xs">{BUSINESS.description}</p>
         </div>
         <div className="flex flex-col gap-5">
           <span className="text-primary font-headline font-bold text-[10px] uppercase tracking-[0.3em]">Horario</span>
-          {HORARIO_VISIBLE.map((h) => (
-            <div key={h.dia}>
-              <p className="text-on-surface font-label text-xs uppercase tracking-wider">{h.dia}</p>
-              <p className={`font-label text-xs mt-0.5 ${h.horas === "Cerrado" ? "text-outline/40" : "text-outline"}`}>{h.horas}</p>
+          {horarioPorDia.map(({ dia, nombre, franjas }) => (
+            <div key={dia}>
+              <p className="text-on-surface font-label text-xs uppercase tracking-wider">{nombre}</p>
+              <p className={`font-label text-xs mt-0.5 ${!franjas.length ? "text-outline/40" : "text-outline"}`}>
+                {formatearFranjas(franjas)}
+              </p>
             </div>
           ))}
         </div>
