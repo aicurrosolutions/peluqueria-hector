@@ -98,6 +98,7 @@ export default function ReservarCliente() {
           nombre,
           telefono,
           email: email || undefined,
+          _gotcha: "", // honeypot — siempre vacío en envíos legítimos
         }),
       });
       let data: { id?: string; error?: string } = {};

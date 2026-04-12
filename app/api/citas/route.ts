@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
-import { parseISO, startOfDay, endOfDay } from "date-fns";
+import { parseISO, startOfDay, endOfDay, subMinutes } from "date-fns";
 import { enviarConfirmacion, notificarBarber } from "@/lib/email";
 import { z } from "zod";
 
@@ -14,9 +14,10 @@ const CitaPostSchema = z.object({
   servicioId: z.string().min(1),
   fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha debe ser YYYY-MM-DD"),
   hora: z.string().regex(/^\d{2}:\d{2}$/, "Hora debe ser HH:MM"),
-  nombre: z.string().min(1).max(100),
-  telefono: z.string().min(6).max(20),
+  nombre: z.string().min(2).max(100).regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/, "Nombre inválido"),
+  telefono: z.string().min(9).max(20).regex(/^[+\d\s()\-]{9,20}$/, "Teléfono inválido"),
   email: z.string().email().optional().or(z.literal("")),
+  _gotcha: z.string().max(0).optional(), // honeypot — los bots lo rellenan, los humanos no
 });
 
 const CitaGetSchema = z.object({
@@ -59,6 +60,11 @@ export async function POST(req: NextRequest) {
     const parsed = CitaPostSchema.safeParse(body);
 
     if (!parsed.success) {
+      // Si el honeypot tiene contenido, rechazamos silenciosamente (mismo 409 que slot ocupado)
+      const esHoneypot = parsed.error.issues.some((i) => i.path[0] === "_gotcha");
+      if (esHoneypot) {
+        return NextResponse.json({ error: "Esta hora ya no está disponible" }, { status: 409 });
+      }
       return NextResponse.json(
         { error: parsed.error.issues[0]?.message ?? "Datos inválidos" },
         { status: 400 }
@@ -68,6 +74,38 @@ export async function POST(req: NextRequest) {
     const { servicioId, fecha, hora, nombre, telefono, email } = parsed.data;
     const emailVal = email || undefined;
     const fechaDate = parseISO(fecha);
+
+    // ── Seguridad: rate limiting por teléfono ──────────────────────────────
+    // 1. Mismo teléfono no puede reservar más de 1 cita en los últimos 10 minutos
+    const hace10min = subMinutes(new Date(), 10);
+    const reservasRecientes = await prisma.cita.count({
+      where: {
+        telefono,
+        createdAt: { gte: hace10min },
+      },
+    });
+    if (reservasRecientes > 0) {
+      return NextResponse.json(
+        { error: "Acabas de hacer una reserva. Espera unos minutos antes de hacer otra." },
+        { status: 429 }
+      );
+    }
+
+    // 2. Mismo teléfono no puede tener más de 2 citas activas (pendiente/confirmada) en el futuro
+    const citasActivasFuturas = await prisma.cita.count({
+      where: {
+        telefono,
+        estado: { in: ["PENDIENTE", "CONFIRMADA"] },
+        fecha: { gte: startOfDay(new Date()) },
+      },
+    });
+    if (citasActivasFuturas >= 2) {
+      return NextResponse.json(
+        { error: "Ya tienes 2 citas reservadas. Cancela una antes de hacer otra nueva." },
+        { status: 429 }
+      );
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     // Obtener en paralelo las citas del día (con duración) y el servicio solicitado
     const [citasDelDia, servicio] = await Promise.all([
@@ -103,7 +141,6 @@ export async function POST(req: NextRequest) {
     let cita;
     try {
       cita = await prisma.$transaction(async (tx) => {
-        // Upsert del cliente — falla silenciosamente si el modelo aún no existe en BD
         let clienteId: string | undefined;
         try {
           const cliente = await tx.cliente.upsert({

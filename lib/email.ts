@@ -182,6 +182,37 @@ export async function enviarModificacion(datos: DatosEmail) {
   });
 }
 
+// ─── Recordatorio 24h antes ────────────────────────────
+export async function enviarRecordatorio(datos: DatosEmail) {
+  const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
+
+  await resend.emails.send({
+    from: `${BUSINESS.name} <${FROM}>`,
+    to: datos.email,
+    subject: `Recuerda tu cita mañana — ${datos.hora} · ${format(datos.fecha, "d MMM", { locale: es })}`,
+    html: wrap(`
+      ${header("Recuerda tu cita", "Mañana te esperamos")}
+
+      <div style="background:${C.surface};padding:24px;margin-bottom:8px;">
+        ${row("Servicio", datos.servicio)}
+        ${row("Fecha", fechaFormato)}
+        ${row("Hora", datos.hora, true)}
+      </div>
+
+      <p style="color:${C.muted};font-size:12px;text-align:center;margin:20px 0 4px;letter-spacing:1px;">
+        ${BUSINESS.direccion}
+      </p>
+      <p style="color:${C.faint};font-size:11px;text-align:center;margin:0;letter-spacing:1px;">
+        Si no puedes venir, cancela con al menos 24h de antelación.
+      </p>
+
+      ${button("Gestionar mi cita", `${BUSINESS.url}/cancelar/${datos.citaId}`)}
+
+      ${footer(datos.citaId.slice(0, 8).toUpperCase())}
+    `),
+  });
+}
+
 // ─── Cancelación de cita ────────────────────────────────
 export async function enviarCancelacion(datos: Omit<DatosEmail, "citaId">) {
   const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
