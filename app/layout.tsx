@@ -18,11 +18,23 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: SEO.titleHome,
   description: SEO.descHome,
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: SEO.titleHome,
     description: SEO.descHome,
     type: "website",
     url: BUSINESS.url,
+    images: [
+      {
+        url: `${BUSINESS.url}/fondo.hero.jpg`,
+        width: 1200,
+        height: 630,
+        alt: BUSINESS.name,
+      },
+    ],
   },
 };
 
