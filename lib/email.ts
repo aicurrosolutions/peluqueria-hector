@@ -6,6 +6,81 @@ import { BUSINESS, ADMIN } from "@/lib/config";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 
+// ─── Colores ───────────────────────────────────────────
+const C = {
+  bg:       "#0D0D0D",
+  surface:  "#161616",
+  border:   "rgba(201,168,76,0.15)",
+  gold:     "#C9A84C",
+  goldDim:  "#755B00",
+  text:     "#F5F0EB",
+  muted:    "#888888",
+  faint:    "#444444",
+  error:    "#BA1A1A",
+  success:  "#15803D",
+};
+
+// ─── Componentes reutilizables ──────────────────────────
+function header(titulo: string, subtitulo?: string) {
+  return `
+    <div style="text-align:center;padding:40px 0 32px;">
+      <p style="color:${C.gold};font-size:10px;letter-spacing:5px;text-transform:uppercase;margin:0 0 12px;font-family:Georgia,serif;">
+        ${BUSINESS.name}
+      </p>
+      <h1 style="color:${C.text};font-size:26px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:0;font-family:Georgia,serif;line-height:1.2;">
+        ${titulo}
+      </h1>
+      ${subtitulo ? `<p style="color:${C.muted};font-size:11px;letter-spacing:3px;text-transform:uppercase;margin:10px 0 0;">${subtitulo}</p>` : ""}
+    </div>
+    <div style="height:1px;background:linear-gradient(to right,transparent,${C.gold},transparent);margin-bottom:32px;"></div>
+  `;
+}
+
+function row(label: string, value: string, highlight = false) {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid ${C.border};">
+      <span style="color:${C.muted};font-size:10px;letter-spacing:3px;text-transform:uppercase;font-family:Georgia,serif;">${label}</span>
+      <span style="color:${highlight ? C.gold : C.text};font-size:${highlight ? "16px" : "13px"};font-weight:${highlight ? "700" : "400"};font-family:Georgia,serif;">${value}</span>
+    </div>
+  `;
+}
+
+function button(texto: string, href: string, color = C.gold) {
+  return `
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${href}" style="display:inline-block;background:${color};color:#0D0D0D;font-family:Georgia,serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;padding:16px 40px;text-decoration:none;">
+        ${texto}
+      </a>
+    </div>
+  `;
+}
+
+function footer(ref?: string) {
+  return `
+    <div style="height:1px;background:linear-gradient(to right,transparent,${C.border},transparent);margin:32px 0 24px;"></div>
+    ${ref ? `<p style="color:${C.faint};font-size:10px;letter-spacing:2px;text-align:center;text-transform:uppercase;margin:0 0 8px;">Ref: <span style="color:${C.goldDim}">${ref}</span></p>` : ""}
+    <p style="color:${C.faint};font-size:10px;letter-spacing:2px;text-align:center;text-transform:uppercase;margin:0;">
+      ${BUSINESS.name} &nbsp;·&nbsp; @${BUSINESS.instagram}
+    </p>
+    <p style="color:${C.faint};font-size:10px;text-align:center;margin:6px 0 0;">${BUSINESS.direccion}</p>
+  `;
+}
+
+function wrap(contenido: string) {
+  return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+    <body style="margin:0;padding:0;background:${C.bg};">
+      <div style="max-width:560px;margin:0 auto;padding:0 24px 48px;background:${C.bg};">
+        ${contenido}
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// ─── Tipos ─────────────────────────────────────────────
 interface DatosEmail {
   nombre: string;
   email: string;
@@ -15,113 +90,99 @@ interface DatosEmail {
   citaId: string;
 }
 
+// ─── Confirmación de reserva ────────────────────────────
 export async function enviarConfirmacion(datos: DatosEmail) {
   const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
 
   await resend.emails.send({
     from: `${BUSINESS.name} <${FROM}>`,
     to: datos.email,
-    subject: `Cita confirmada — ${BUSINESS.name}`,
-    html: `
-      <div style="background:#0a0a0a;color:#F5F0EB;font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:40px 32px;">
-        <div style="text-align:center;margin-bottom:32px;">
-          <h1 style="color:#C9A84C;font-size:28px;letter-spacing:4px;text-transform:uppercase;margin:0;">${BUSINESS.name}</h1>
-          <p style="color:#888;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:4px 0 0;">${BUSINESS.role}</p>
-        </div>
-        <div style="border-top:1px solid #C9A84C33;border-bottom:1px solid #C9A84C33;padding:24px 0;margin:24px 0;">
-          <h2 style="color:#F5F0EB;font-size:18px;margin:0 0 16px;">Tu cita está confirmada</h2>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Servicio:</strong> ${datos.servicio}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Fecha:</strong> ${fechaFormato}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Hora:</strong> ${datos.hora}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Nombre:</strong> ${datos.nombre}</p>
-        </div>
-        <p style="color:#888;font-size:13px;margin-top:24px;">
-          Si necesitas cancelar tu cita (mínimo 24h antes), puedes hacerlo aquí:
-        </p>
-        <p style="margin:12px 0;">
-          <a href="${BUSINESS.url}/cancelar/${datos.citaId}" style="color:#C9A84C;font-size:13px;">
-            ${BUSINESS.url}/cancelar/${datos.citaId}
-          </a>
-        </p>
-        <p style="color:#555;font-size:11px;">
-          Ref: <strong style="color:#C9A84C;">${datos.citaId.slice(0, 8).toUpperCase()}</strong>
-        </p>
-        <p style="color:#555;font-size:11px;margin-top:32px;text-align:center;">
-          ${BUSINESS.name} · @${BUSINESS.instagram}
-        </p>
+    subject: `Cita confirmada — ${datos.hora} · ${format(datos.fecha, "d MMM", { locale: es })}`,
+    html: wrap(`
+      ${header("Cita Confirmada", "Reserva completada")}
+
+      <div style="background:${C.surface};padding:24px;margin-bottom:8px;">
+        ${row("Cliente", datos.nombre)}
+        ${row("Servicio", datos.servicio)}
+        ${row("Fecha", fechaFormato)}
+        ${row("Hora", datos.hora, true)}
       </div>
-    `,
+
+      <p style="color:${C.muted};font-size:12px;text-align:center;margin:20px 0 0;letter-spacing:1px;">
+        Cancelación gratuita hasta 24h antes de la cita
+      </p>
+
+      ${button("Gestionar mi cita", `${BUSINESS.url}/cancelar/${datos.citaId}`)}
+
+      <p style="color:${C.faint};font-size:10px;text-align:center;letter-spacing:1px;margin:0;">
+        O copia este enlace: <span style="color:${C.goldDim}">${BUSINESS.url}/cancelar/${datos.citaId}</span>
+      </p>
+
+      ${footer(datos.citaId.slice(0, 8).toUpperCase())}
+    `),
   });
 }
 
+// ─── Notificación al barber ─────────────────────────────
 export async function notificarBarber(datos: DatosEmail & { telefono: string }) {
   const emailDestino = ADMIN.emailNotificaciones;
-  if (!emailDestino) return; // sin configurar, skip silencioso
+  if (!emailDestino) return;
 
   const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
 
   await resend.emails.send({
     from: `${BUSINESS.name} <${FROM}>`,
     to: emailDestino,
-    subject: `📅 Nueva cita — ${datos.nombre} · ${datos.hora}`,
-    html: `
-      <div style="background:#0a0a0a;color:#F5F0EB;font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:40px 32px;">
-        <div style="text-align:center;margin-bottom:24px;">
-          <h1 style="color:#C9A84C;font-size:22px;letter-spacing:4px;text-transform:uppercase;margin:0;">Nueva reserva</h1>
-          <p style="color:#888;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:4px 0 0;">${BUSINESS.name}</p>
-        </div>
-        <div style="border-top:1px solid #C9A84C33;border-bottom:1px solid #C9A84C33;padding:24px 0;margin:24px 0;">
-          <p style="margin:8px 0;color:#ccc;font-size:15px;"><strong style="color:#C9A84C;">Cliente:</strong> ${datos.nombre}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Teléfono:</strong> <a href="tel:${datos.telefono}" style="color:#C9A84C;">${datos.telefono}</a></p>
-          ${datos.email ? `<p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Email:</strong> ${datos.email}</p>` : ""}
-          <p style="margin:16px 0 8px;color:#ccc;"><strong style="color:#C9A84C;">Servicio:</strong> ${datos.servicio}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Fecha:</strong> ${fechaFormato}</p>
-          <p style="margin:8px 0;color:#F5F0EB;font-size:20px;font-weight:bold;"><strong style="color:#C9A84C;">Hora:</strong> ${datos.hora}</p>
-        </div>
-        <p style="color:#555;font-size:11px;margin-top:24px;text-align:center;">
-          Ref: ${datos.citaId.slice(0, 8).toUpperCase()}
-        </p>
+    subject: `Nueva reserva — ${datos.nombre} · ${datos.hora} · ${format(datos.fecha, "d MMM", { locale: es })}`,
+    html: wrap(`
+      ${header("Nueva Reserva", "Acaba de entrar una cita")}
+
+      <div style="background:${C.surface};padding:24px;margin-bottom:8px;">
+        ${row("Cliente", datos.nombre)}
+        ${row("Teléfono", datos.telefono)}
+        ${datos.email ? row("Email", datos.email) : ""}
+        ${row("Servicio", datos.servicio)}
+        ${row("Fecha", fechaFormato)}
+        ${row("Hora", datos.hora, true)}
       </div>
-    `,
+
+      ${button("Ver en el panel", `${BUSINESS.url}/admin/dashboard`)}
+
+      ${footer(datos.citaId.slice(0, 8).toUpperCase())}
+    `),
   });
 }
 
+// ─── Modificación de cita ───────────────────────────────
 export async function enviarModificacion(datos: DatosEmail) {
   const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
 
   await resend.emails.send({
     from: `${BUSINESS.name} <${FROM}>`,
     to: datos.email,
-    subject: `Cita modificada — ${BUSINESS.name}`,
-    html: `
-      <div style="background:#0a0a0a;color:#F5F0EB;font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:40px 32px;">
-        <div style="text-align:center;margin-bottom:32px;">
-          <h1 style="color:#C9A84C;font-size:28px;letter-spacing:4px;text-transform:uppercase;margin:0;">${BUSINESS.name}</h1>
-          <p style="color:#888;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:4px 0 0;">${BUSINESS.role}</p>
-        </div>
-        <div style="border-top:1px solid #C9A84C33;border-bottom:1px solid #C9A84C33;padding:24px 0;margin:24px 0;">
-          <h2 style="color:#F5F0EB;font-size:18px;margin:0 0 16px;">Tu cita ha sido modificada</h2>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Servicio:</strong> ${datos.servicio}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Nueva fecha:</strong> ${fechaFormato}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Nueva hora:</strong> ${datos.hora}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Nombre:</strong> ${datos.nombre}</p>
-        </div>
-        <p style="color:#888;font-size:13px;margin-top:24px;">
-          Si necesitas volver a modificar o cancelar tu cita (mínimo 24h antes):
-        </p>
-        <p style="margin:12px 0;">
-          <a href="${BUSINESS.url}/cancelar/${datos.citaId}" style="color:#C9A84C;font-size:13px;">
-            ${BUSINESS.url}/cancelar/${datos.citaId}
-          </a>
-        </p>
-        <p style="color:#555;font-size:11px;margin-top:32px;text-align:center;">
-          ${BUSINESS.name} · @${BUSINESS.instagram}
-        </p>
+    subject: `Cita modificada — ${datos.hora} · ${format(datos.fecha, "d MMM", { locale: es })}`,
+    html: wrap(`
+      ${header("Cita Modificada", "Tu reserva ha sido actualizada")}
+
+      <div style="background:${C.surface};padding:24px;margin-bottom:8px;">
+        ${row("Cliente", datos.nombre)}
+        ${row("Servicio", datos.servicio)}
+        ${row("Nueva fecha", fechaFormato)}
+        ${row("Nueva hora", datos.hora, true)}
       </div>
-    `,
+
+      <p style="color:${C.muted};font-size:12px;text-align:center;margin:20px 0 0;letter-spacing:1px;">
+        ¿Necesitas volver a cambiarla? Tienes hasta 24h antes.
+      </p>
+
+      ${button("Gestionar mi cita", `${BUSINESS.url}/cancelar/${datos.citaId}`)}
+
+      ${footer(datos.citaId.slice(0, 8).toUpperCase())}
+    `),
   });
 }
 
+// ─── Cancelación de cita ────────────────────────────────
 export async function enviarCancelacion(datos: Omit<DatosEmail, "citaId">) {
   const fechaFormato = format(datos.fecha, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
 
@@ -129,24 +190,22 @@ export async function enviarCancelacion(datos: Omit<DatosEmail, "citaId">) {
     from: `${BUSINESS.name} <${FROM}>`,
     to: datos.email,
     subject: `Cita cancelada — ${BUSINESS.name}`,
-    html: `
-      <div style="background:#0a0a0a;color:#F5F0EB;font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:40px 32px;">
-        <div style="text-align:center;margin-bottom:32px;">
-          <h1 style="color:#C9A84C;font-size:28px;letter-spacing:4px;text-transform:uppercase;margin:0;">${BUSINESS.name}</h1>
-        </div>
-        <div style="border-top:1px solid #C9A84C33;border-bottom:1px solid #C9A84C33;padding:24px 0;margin:24px 0;">
-          <h2 style="color:#F5F0EB;font-size:18px;margin:0 0 16px;">Tu cita ha sido cancelada</h2>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Servicio:</strong> ${datos.servicio}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Fecha:</strong> ${fechaFormato}</p>
-          <p style="margin:8px 0;color:#ccc;"><strong style="color:#C9A84C;">Hora:</strong> ${datos.hora}</p>
-        </div>
-        <p style="color:#888;font-size:13px;margin-top:24px;">
-          Puedes reservar una nueva cita cuando quieras en nuestra web.
-        </p>
-        <p style="color:#555;font-size:11px;margin-top:32px;text-align:center;">
-          ${BUSINESS.name} · @${BUSINESS.instagram}
-        </p>
+    html: wrap(`
+      ${header("Cita Cancelada")}
+
+      <div style="background:${C.surface};padding:24px;margin-bottom:8px;">
+        ${row("Servicio", datos.servicio)}
+        ${row("Fecha", fechaFormato)}
+        ${row("Hora", datos.hora)}
       </div>
-    `,
+
+      <p style="color:${C.muted};font-size:12px;text-align:center;margin:24px 0 0;letter-spacing:1px;">
+        Tu cita ha sido cancelada correctamente.<br>Reserva cuando quieras desde nuestra web.
+      </p>
+
+      ${button("Reservar nueva cita", `${BUSINESS.url}/reservar`)}
+
+      ${footer()}
+    `),
   });
 }
