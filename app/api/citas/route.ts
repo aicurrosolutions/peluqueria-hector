@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { parseISO, startOfDay, endOfDay, subMinutes } from "date-fns";
 import { enviarConfirmacion, notificarBarber } from "@/lib/email";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 function timeToMinutes(t: string): number {
@@ -16,7 +17,8 @@ const CitaPostSchema = z.object({
   hora: z.string().regex(/^\d{2}:\d{2}$/, "Hora debe ser HH:MM"),
   nombre: z.string().min(2).max(100).regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-]+$/, "Nombre inválido"),
   telefono: z.string().min(9).max(20).regex(/^[+\d\s()\-]{9,20}$/, "Teléfono inválido"),
-  email: z.string().email().optional().or(z.literal("")),
+  email: z.string().email().optional().or(z.literal("")).nullable(),
+  _adminOverride: z.boolean().optional(), // interno — el admin puede omitir email
   _gotcha: z.string().max(0).optional(), // honeypot — los bots lo rellenan, los humanos no
 });
 
@@ -71,8 +73,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const session = await getAdminSession();
     const { servicioId, fecha, hora, nombre, telefono, email } = parsed.data;
     const emailVal = email || undefined;
+
+    // El email es obligatorio para reservas públicas; el admin puede omitirlo
+    if (!emailVal && !session) {
+      return NextResponse.json({ error: "El email es obligatorio para recibir la confirmación" }, { status: 400 });
+    }
     const fechaDate = parseISO(fecha);
 
     // ── Seguridad: rate limiting por teléfono ──────────────────────────────
@@ -187,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(cita, { status: 201 });
   } catch (e: unknown) {
-    console.error("[POST /api/citas]", e);
+    logger.error("POST /api/citas falló", e, { route: "POST /api/citas" });
     return NextResponse.json({ error: "Error interno del servidor. Inténtalo de nuevo." }, { status: 500 });
   }
 }

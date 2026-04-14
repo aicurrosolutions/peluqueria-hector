@@ -33,13 +33,16 @@ export async function GET(req: NextRequest) {
   const fecha = parseISO(fechaStr);
   const diaSemana = fecha.getDay();
 
+  const fechaInicio = startOfDay(fecha);
+
   // Verificar si el admin ha abierto este día expresamente
-  const [diaAbierto, diaCerrado] = await Promise.all([
-    prisma.diaAbierto.findUnique({ where: { fecha: startOfDay(fecha) } }),
-    prisma.diaCerrado.findUnique({ where: { fecha: startOfDay(fecha) } }),
+  const [diaAbierto, diaCerrado, ausencia] = await Promise.all([
+    prisma.diaAbierto.findUnique({ where: { fecha: fechaInicio } }),
+    prisma.diaCerrado.findUnique({ where: { fecha: fechaInicio } }),
+    prisma.ausencia.findFirst({ where: { inicio: { lte: fechaInicio }, fin: { gte: fechaInicio } } }),
   ]);
 
-  if (diaCerrado) return NextResponse.json({ slots: [] });
+  if (diaCerrado || ausencia) return NextResponse.json({ slots: [] });
 
   // Obtener franjas del horario desde BD
   let franjas = await prisma.horarioFranja.findMany({

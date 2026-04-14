@@ -82,7 +82,7 @@ export default function ReservarCliente() {
   };
 
   const handleConfirmar = async () => {
-    if (!servicioSel || !fechaSel || !horaSel || !nombre || !telefono || !aceptaPrivacidad) return;
+    if (!servicioSel || !fechaSel || !horaSel || !nombre || !telefono || !email || !aceptaPrivacidad) return;
     setEnviando(true);
     setError(null);
     try {
@@ -135,9 +135,9 @@ export default function ReservarCliente() {
             <Row label="Fecha" value={fechaSel ? format(fechaSel, "EEEE d 'de' MMMM", { locale: es }) : ""} />
             <Row label="Hora" value={horaSel ?? ""} />
             <Row label="Nombre" value={nombre} />
-            {email && <Row label="Email" value={email} />}
+            <Row label="Email" value={email} />
           </div>
-          {email && <p className="text-outline text-xs font-body">Confirmación enviada a tu email.</p>}
+          <p className="text-outline text-xs font-body">Confirmación enviada a tu email.</p>
           <p className="text-outline/40 text-[10px] uppercase tracking-widest font-label">
             Ref: {citaId?.slice(0, 8).toUpperCase()}
           </p>
@@ -303,7 +303,7 @@ export default function ReservarCliente() {
                 <form className="space-y-10 max-w-xl" onSubmit={(e) => { e.preventDefault(); handleConfirmar(); }}>
                   <FloatInput label="Nombre Completo *" value={nombre} onChange={setNombre} placeholder="EJ. JUAN GARCÍA" />
                   <FloatInput label="WhatsApp / Teléfono *" value={telefono} onChange={setTelefono} placeholder="+34 600 000 000" type="tel" />
-                  <FloatInput label="Email (opcional)" value={email} onChange={setEmail} placeholder="para confirmación" type="email" />
+                  <FloatInput label="Email *" value={email} onChange={setEmail} placeholder="para recibir la confirmación" type="email" required />
 
                   {/* Checkbox privacidad */}
                   <label className="flex items-start gap-3 cursor-pointer group">
@@ -328,7 +328,7 @@ export default function ReservarCliente() {
 
                   <button
                     type="submit"
-                    disabled={!fechaSel || !horaSel || !nombre || !telefono || !aceptaPrivacidad || enviando}
+                    disabled={!fechaSel || !horaSel || !nombre || !telefono || !email || !aceptaPrivacidad || enviando}
                     className="w-full bg-primary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-5 hover:bg-primary-dim transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {enviando ? "Confirmando..." : "Confirmar Cita"}
@@ -382,7 +382,7 @@ export default function ReservarCliente() {
                     {paso === "datos" ? (
                       <button
                         onClick={handleConfirmar}
-                        disabled={!fechaSel || !horaSel || !nombre || !telefono || !aceptaPrivacidad || enviando}
+                        disabled={!fechaSel || !horaSel || !nombre || !telefono || !email || !aceptaPrivacidad || enviando}
                         className="w-full bg-primary text-on-primary font-headline font-bold uppercase tracking-[0.2em] py-4 hover:bg-primary-dim transition-all disabled:opacity-30"
                       >
                         {enviando ? "Confirmando..." : "Confirmar"}
@@ -434,8 +434,8 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-function FloatInput({ label, value, onChange, placeholder, type = "text" }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string;
+function FloatInput({ label, value, onChange, placeholder, type = "text", required }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string; required?: boolean;
 }) {
   return (
     <div className="group relative">
@@ -447,6 +447,7 @@ function FloatInput({ label, value, onChange, placeholder, type = "text" }: {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        required={required}
         className="w-full bg-transparent border-0 border-b border-outline focus:ring-0 focus:border-primary px-0 py-3 font-headline text-xl uppercase placeholder:text-surface-container-highest text-on-surface transition-all outline-none"
       />
     </div>

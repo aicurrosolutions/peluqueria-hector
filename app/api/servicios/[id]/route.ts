@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getAdminSession();
@@ -19,6 +20,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       activo: body.activo,
     },
   });
+
+  await audit({
+    accion: "SERVICIO_ACTUALIZADO",
+    entidad: "Servicio",
+    entidadId: id,
+    datos: { cambios: body },
+  });
+
   return NextResponse.json(servicio);
 }
 
@@ -28,5 +37,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
   await prisma.servicio.update({ where: { id }, data: { activo: false } });
+
+  await audit({
+    accion: "SERVICIO_DESACTIVADO",
+    entidad: "Servicio",
+    entidadId: id,
+  });
+
   return NextResponse.json({ ok: true });
 }

@@ -187,3 +187,14 @@ button.rdp-button_previous:focus-visible {
 .dia-abierto .rdp-day_button:hover:not([disabled]) {
   background-color: rgba(22, 163, 74, 0.15) !important;
 }
+
+.dia-ausencia .rdp-day_button {
+  background-color: rgba(117, 91, 0, 0.12) !important;
+  color: #755B00 !important;
+  border-bottom: 2px solid rgba(117, 91, 0, 0.4) !important;
+  opacity: 0.7;
+}
+
+.dia-ausencia .rdp-day_button:hover:not([disabled]) {
+  background-color: rgba(117, 91, 0, 0.2) !important;
+}

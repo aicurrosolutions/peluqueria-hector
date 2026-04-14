@@ -42,29 +42,30 @@ export default function NuevaCitaForm({
   const [slots, setSlots] = useState<string[]>([]);
   const [cargandoSlots, setCargandoSlots] = useState(false);
 
-  // Autocomplete de clientes
+  // Autocomplete — estado compartido de sugerencias
   const [sugerencias, setSugerencias] = useState<ClienteSugerido[]>([]);
-  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState<ClienteSugerido | null>(null);
   const [buscando, setBuscando] = useState(false);
+
+  // Dos dropdowns independientes: uno por nombre, otro por teléfono
+  const [mostrarDropNombre, setMostrarDropNombre] = useState(false);
+  const [mostrarDropTelefono, setMostrarDropTelefono] = useState(false);
+
+  const dropNombreRef = useRef<HTMLDivElement>(null);
+  const dropTelefonoRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Servicio actualmente seleccionado (para leer duración)
   const servicioActual = servicios.find((s) => s.id === servicioId);
 
-  // ── Cargar slots cuando cambia fecha o servicio ──────────────────
+  // ── Slots ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!fecha || !servicioActual) return;
-
     const controller = new AbortController();
     setCargandoSlots(true);
-
-    fetch(
-      `/api/disponibilidad?fecha=${fecha}&duracion=${servicioActual.duracion}`,
-      { signal: controller.signal }
-    )
+    fetch(`/api/disponibilidad?fecha=${fecha}&duracion=${servicioActual.duracion}`, {
+      signal: controller.signal,
+    })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -72,45 +73,50 @@ export default function NuevaCitaForm({
       .then((data: { slots: string[] }) => {
         const nuevos = data.slots ?? [];
         setSlots(nuevos);
-        // Mantener hora si sigue disponible (ej. horaDefault pre-cargada); si no, resetear
         setHora((h) => (nuevos.includes(h) ? h : ""));
       })
       .catch((e) => {
         if (e.name !== "AbortError") { setSlots([]); setHora(""); }
       })
       .finally(() => setCargandoSlots(false));
-
     return () => controller.abort();
   }, [fecha, servicioId, servicioActual]);
 
-  // ── Cerrar dropdown al click fuera ───────────────────────────────
+  // ── Cerrar dropdowns al click fuera ─────────────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setMostrarSugerencias(false);
+      if (dropNombreRef.current && !dropNombreRef.current.contains(e.target as Node)) {
+        setMostrarDropNombre(false);
+      }
+      if (dropTelefonoRef.current && !dropTelefonoRef.current.contains(e.target as Node)) {
+        setMostrarDropTelefono(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Búsqueda de clientes existentes ──────────────────────────────
-  const buscarClientes = useCallback(async (q: string) => {
+  // ── Búsqueda de clientes ─────────────────────────────────────────
+  const buscarClientes = useCallback(async (q: string, origen: "nombre" | "telefono") => {
     if (q.length < 2) {
       setSugerencias([]);
-      setMostrarSugerencias(false);
+      setMostrarDropNombre(false);
+      setMostrarDropTelefono(false);
       return;
     }
     setBuscando(true);
     try {
       const res = await fetch(`/api/clientes?q=${encodeURIComponent(q)}`);
-      if (!res.ok) {
-        setSugerencias([]);
-        return;
-      }
+      if (!res.ok) { setSugerencias([]); return; }
       const data: ClienteSugerido[] = await res.json();
       setSugerencias(data);
-      setMostrarSugerencias(data.length > 0);
+      if (origen === "nombre") {
+        setMostrarDropNombre(data.length > 0);
+        setMostrarDropTelefono(false);
+      } else {
+        setMostrarDropTelefono(data.length > 0);
+        setMostrarDropNombre(false);
+      }
     } catch {
       setSugerencias([]);
     } finally {
@@ -118,21 +124,28 @@ export default function NuevaCitaForm({
     }
   }, []);
 
-  const scheduleSearch = (q: string) => {
+  const scheduleSearch = (q: string, origen: "nombre" | "telefono") => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => buscarClientes(q), 300);
+    timeoutRef.current = setTimeout(() => buscarClientes(q, origen), 300);
   };
 
   const handleNombreChange = (v: string) => {
     setNombre(v);
     setClienteSeleccionado(null);
-    scheduleSearch(v);
+    scheduleSearch(v, "nombre");
   };
 
   const handleTelefonoChange = (v: string) => {
     setTelefono(v);
     setClienteSeleccionado(null);
-    scheduleSearch(v);
+    // Solo buscar cuando hay suficientes dígitos para que sea útil
+    const digitos = v.replace(/\D/g, "");
+    if (digitos.length >= 3) {
+      scheduleSearch(v, "telefono");
+    } else {
+      setSugerencias([]);
+      setMostrarDropTelefono(false);
+    }
   };
 
   const seleccionarCliente = (c: ClienteSugerido) => {
@@ -140,7 +153,8 @@ export default function NuevaCitaForm({
     setTelefono(c.telefono);
     setEmail(c.email ?? "");
     setClienteSeleccionado(c);
-    setMostrarSugerencias(false);
+    setMostrarDropNombre(false);
+    setMostrarDropTelefono(false);
     setSugerencias([]);
   };
 
@@ -161,7 +175,7 @@ export default function NuevaCitaForm({
       if (!res.ok) {
         setError(data.error ?? "Error al crear la cita");
       } else if (onCreada) {
-        onCreada(); // el padre cierra el panel y recarga las citas
+        onCreada();
       } else {
         router.push(`/admin/citas?fecha=${fecha}`);
         router.refresh();
@@ -173,7 +187,6 @@ export default function NuevaCitaForm({
     }
   };
 
-  // Agrupar slots en mañana/tarde para mejor legibilidad
   const slotsMañana = slots.filter((s) => parseInt(s) < 14);
   const slotsTarde  = slots.filter((s) => parseInt(s) >= 14);
 
@@ -203,14 +216,13 @@ export default function NuevaCitaForm({
         />
       </Field>
 
-      {/* HORA — selector dinámico de slots disponibles */}
+      {/* HORA */}
       <div className="sm:col-span-2 space-y-2">
         <label className="text-[10px] tracking-[0.3em] uppercase text-outline font-label flex items-center gap-2">
           <Clock size={10} />
           Hora disponible *
           {cargandoSlots && <span className="text-outline/50">cargando...</span>}
         </label>
-
         {cargandoSlots ? (
           <div className="h-10 bg-surface-container border border-outline/20 animate-pulse" />
         ) : slots.length === 0 ? (
@@ -235,23 +247,48 @@ export default function NuevaCitaForm({
         )}
       </div>
 
-      {/* NOMBRE con autocomplete */}
-      <div className="space-y-2 relative" ref={dropdownRef}>
+      {/* TELÉFONO — campo principal de búsqueda (identificador único del cliente) */}
+      <div className="space-y-2 relative" ref={dropTelefonoRef}>
         <label className="text-[10px] tracking-[0.3em] uppercase text-outline font-label flex items-center gap-2">
-          Nombre *
+          Teléfono *
           {clienteSeleccionado && (
             <span className="flex items-center gap-1 text-primary">
-              <UserCheck size={10} /> Guardado
+              <UserCheck size={10} /> Cliente encontrado
             </span>
           )}
           {buscando && <span className="text-outline/40">buscando...</span>}
         </label>
         <div className="relative">
           <input
+            type="tel"
+            value={telefono}
+            onChange={(e) => handleTelefonoChange(e.target.value)}
+            onFocus={() => sugerencias.length > 0 && setMostrarDropTelefono(true)}
+            required
+            autoComplete="off"
+            placeholder="Busca por teléfono…"
+            className="w-full bg-surface-container border border-outline/20 text-on-surface placeholder-outline/40 px-3 py-3 text-sm focus:outline-none focus:border-primary transition-colors pr-8"
+          />
+          <Search size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-outline/30 pointer-events-none" />
+        </div>
+
+        {mostrarDropTelefono && sugerencias.length > 0 && (
+          <SugerenciasDropdown sugerencias={sugerencias} onSelect={seleccionarCliente} />
+        )}
+      </div>
+
+      {/* NOMBRE con autocomplete por nombre */}
+      <div className="space-y-2 relative" ref={dropNombreRef}>
+        <label className="text-[10px] tracking-[0.3em] uppercase text-outline font-label flex items-center gap-2">
+          Nombre *
+          {buscando && !mostrarDropTelefono && <span className="text-outline/40">buscando...</span>}
+        </label>
+        <div className="relative">
+          <input
             type="text"
             value={nombre}
             onChange={(e) => handleNombreChange(e.target.value)}
-            onFocus={() => sugerencias.length > 0 && setMostrarSugerencias(true)}
+            onFocus={() => sugerencias.length > 0 && setMostrarDropNombre(true)}
             required
             autoComplete="off"
             className="w-full bg-surface-container border border-outline/20 text-on-surface placeholder-outline/40 px-3 py-3 text-sm focus:outline-none focus:border-primary transition-colors pr-8"
@@ -259,37 +296,10 @@ export default function NuevaCitaForm({
           <Search size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-outline/30 pointer-events-none" />
         </div>
 
-        {mostrarSugerencias && sugerencias.length > 0 && (
-          <div className="absolute z-50 top-full left-0 right-0 bg-surface-container border border-outline/20 shadow-xl mt-1 overflow-hidden">
-            {sugerencias.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => seleccionarCliente(c)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-primary/10 transition-colors text-left border-b border-outline/10 last:border-0"
-              >
-                <div>
-                  <p className="text-sm font-headline font-bold text-on-surface uppercase tracking-tight">{c.nombre}</p>
-                  <p className="text-[10px] text-outline font-label">{c.telefono}{c.email ? ` · ${c.email}` : ""}</p>
-                </div>
-                <UserCheck size={12} className="text-primary shrink-0 ml-2" />
-              </button>
-            ))}
-          </div>
+        {mostrarDropNombre && sugerencias.length > 0 && (
+          <SugerenciasDropdown sugerencias={sugerencias} onSelect={seleccionarCliente} />
         )}
       </div>
-
-      {/* TELÉFONO */}
-      <Field label="Teléfono *">
-        <input
-          type="tel"
-          value={telefono}
-          onChange={(e) => handleTelefonoChange(e.target.value)}
-          required
-          autoComplete="off"
-          className="w-full bg-surface-container border border-outline/20 text-on-surface placeholder-outline/40 px-3 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
-        />
-      </Field>
 
       {/* EMAIL */}
       <Field label="Email (opcional)">
@@ -321,6 +331,33 @@ export default function NuevaCitaForm({
 }
 
 // ── Subcomponentes ────────────────────────────────────────────────────────────
+
+function SugerenciasDropdown({
+  sugerencias,
+  onSelect,
+}: {
+  sugerencias: ClienteSugerido[];
+  onSelect: (c: ClienteSugerido) => void;
+}) {
+  return (
+    <div className="absolute z-50 top-full left-0 right-0 bg-surface-container border border-outline/20 shadow-xl mt-1 overflow-hidden">
+      {sugerencias.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          onClick={() => onSelect(c)}
+          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-primary/10 transition-colors text-left border-b border-outline/10 last:border-0"
+        >
+          <div>
+            <p className="text-sm font-headline font-bold text-on-surface uppercase tracking-tight">{c.nombre}</p>
+            <p className="text-[10px] text-outline font-label">{c.telefono}{c.email ? ` · ${c.email}` : ""}</p>
+          </div>
+          <UserCheck size={12} className="text-primary shrink-0 ml-2" />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function SlotGrid({
   slots,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { HORARIO_DEFAULT, DIAS_SEMANA } from "@/lib/horarios";
+import { audit } from "@/lib/audit";
 import { z } from "zod";
 
 const FranjaSchema = z.object({
@@ -79,6 +80,12 @@ export async function POST(req: NextRequest) {
         })]
       : []),
   ]);
+
+  await audit({
+    accion: "HORARIO_ACTUALIZADO",
+    entidad: "HorarioFranja",
+    datos: { diaSemana, nombreDia: DIAS_SEMANA[diaSemana], franjas },
+  });
 
   return NextResponse.json({ ok: true });
 }

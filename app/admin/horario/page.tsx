@@ -105,64 +105,72 @@ export default function HorarioPage() {
             return (
               <div key={dia.diaSemana} className="bg-surface-container-low">
                 {/* Cabecera del día */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-outline/5">
-                  <div className="flex items-center gap-4">
-                    <span className="font-headline font-bold text-sm uppercase tracking-wider text-on-surface w-28">
-                      {dia.nombre}
-                    </span>
-                    <span className={`text-[10px] uppercase tracking-widest font-label ${cerrado ? "text-outline/40" : "text-primary"}`}>
-                      {cerrado ? "Cerrado" : `${dia.franjas.length} franja${dia.franjas.length > 1 ? "s" : ""}`}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => addFranja(dia.diaSemana)}
-                      className="flex items-center gap-1.5 text-outline hover:text-primary transition-colors text-[10px] uppercase tracking-widest font-label px-3 py-2 border border-outline/20 hover:border-primary/40"
-                    >
-                      <Plus size={11} />
-                      Añadir franja
-                    </button>
-                    <button
-                      onClick={() => guardarDia(dia)}
-                      disabled={esGuardando}
-                      className={`flex items-center gap-1.5 px-4 py-2 font-headline font-bold text-[10px] uppercase tracking-widest transition-all ${
-                        esGuardado
-                          ? "bg-green-700/20 text-green-500"
-                          : "bg-primary text-on-primary hover:bg-primary-dim"
-                      } disabled:opacity-40`}
-                    >
-                      {esGuardado ? <Check size={11} /> : <Save size={11} />}
-                      {esGuardando ? "Guardando..." : esGuardado ? "Guardado" : "Guardar"}
-                    </button>
+                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-outline/5">
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Nombre + estado */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-headline font-bold text-sm uppercase tracking-wider text-on-surface">
+                        {dia.nombre}
+                      </span>
+                      <span className={`text-[10px] uppercase tracking-widest font-label shrink-0 ${cerrado ? "text-outline/40" : "text-primary"}`}>
+                        {cerrado ? "Cerrado" : `${dia.franjas.length} franja${dia.franjas.length > 1 ? "s" : ""}`}
+                      </span>
+                    </div>
+                    {/* Botones — icono solo en móvil, texto completo en md+ */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => addFranja(dia.diaSemana)}
+                        className="flex items-center gap-1 text-outline hover:text-primary transition-colors text-[10px] uppercase tracking-widest font-label px-2.5 py-2 md:px-3 border border-outline/20 hover:border-primary/40"
+                        title="Añadir franja"
+                      >
+                        <Plus size={11} />
+                        <span className="hidden md:inline">Añadir franja</span>
+                      </button>
+                      <button
+                        onClick={() => guardarDia(dia)}
+                        disabled={esGuardando}
+                        className={`flex items-center gap-1 px-2.5 py-2 md:px-4 font-headline font-bold text-[10px] uppercase tracking-widest transition-all ${
+                          esGuardado
+                            ? "bg-green-700/20 text-green-500"
+                            : "bg-primary text-on-primary hover:bg-primary-dim"
+                        } disabled:opacity-40`}
+                        title={esGuardando ? "Guardando..." : esGuardado ? "Guardado" : "Guardar"}
+                      >
+                        {esGuardado ? <Check size={11} /> : <Save size={11} />}
+                        <span className="hidden md:inline">
+                          {esGuardando ? "Guardando..." : esGuardado ? "Guardado" : "Guardar"}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Franjas horarias */}
                 {dia.franjas.length > 0 && (
-                  <div className="px-6 py-4 space-y-3">
+                  <div className="px-4 md:px-6 py-4 space-y-3">
                     {dia.franjas.map((franja, idx) => (
-                      <div key={idx} className="flex items-center gap-4">
-                        <div className="flex items-center gap-3">
-                          <label className="text-[10px] uppercase tracking-widest text-outline font-label w-12">Desde</label>
+                      <div key={idx} className="flex items-center gap-2 md:gap-4">
+                        <div className="flex items-center gap-2 md:gap-3 flex-1">
+                          <label className="text-[10px] uppercase tracking-widest text-outline font-label w-10 md:w-12 shrink-0">Desde</label>
                           <input
                             type="time"
                             value={franja.inicio}
                             onChange={(e) => updateFranja(dia.diaSemana, idx, "inicio", e.target.value)}
-                            className="bg-surface-container-high border-0 border-b border-outline focus:border-primary px-3 py-2 font-headline text-sm text-on-surface outline-none transition-all"
+                            className="bg-surface-container-high border-0 border-b border-outline focus:border-primary px-2 md:px-3 py-2 font-headline text-sm text-on-surface outline-none transition-all w-full max-w-[120px]"
                           />
                         </div>
-                        <div className="flex items-center gap-3">
-                          <label className="text-[10px] uppercase tracking-widest text-outline font-label w-12">Hasta</label>
+                        <div className="flex items-center gap-2 md:gap-3 flex-1">
+                          <label className="text-[10px] uppercase tracking-widest text-outline font-label w-10 md:w-12 shrink-0">Hasta</label>
                           <input
                             type="time"
                             value={franja.fin}
                             onChange={(e) => updateFranja(dia.diaSemana, idx, "fin", e.target.value)}
-                            className="bg-surface-container-high border-0 border-b border-outline focus:border-primary px-3 py-2 font-headline text-sm text-on-surface outline-none transition-all"
+                            className="bg-surface-container-high border-0 border-b border-outline focus:border-primary px-2 md:px-3 py-2 font-headline text-sm text-on-surface outline-none transition-all w-full max-w-[120px]"
                           />
                         </div>
                         <button
                           onClick={() => removeFranja(dia.diaSemana, idx)}
-                          className="text-outline/40 hover:text-error transition-colors ml-2"
+                          className="text-outline/40 hover:text-error transition-colors shrink-0"
                           title="Eliminar franja"
                         >
                           <Trash2 size={14} />

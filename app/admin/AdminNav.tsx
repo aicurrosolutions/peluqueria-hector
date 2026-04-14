@@ -3,16 +3,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Scissors, Calendar, BarChart2, LogOut, Plus, Clock } from "lucide-react";
+import { LayoutDashboard, Scissors, BarChart2, LogOut, Clock, UserCog, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BUSINESS } from "@/lib/config";
 
+// 4 items en bottom nav móvil — holgado y legible
+// Calendario se unificó con Estadísticas
 const NAV = [
-  { href: "/admin/dashboard",    label: "Agenda",       icon: LayoutDashboard },
-  { href: "/admin/servicios",    label: "Servicios",    icon: Scissors },
-  { href: "/admin/horario",      label: "Horario",      icon: Clock },
-  { href: "/admin/calendario",   label: "Calendario",   icon: Calendar },
-  { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart2 },
+  { href: "/admin/dashboard",    label: "Agenda",    icon: LayoutDashboard },
+  { href: "/admin/clientes",     label: "Clientes",  icon: Users },
+  { href: "/admin/servicios",    label: "Servicios", icon: Scissors },
+  { href: "/admin/horario",      label: "Horario",   icon: Clock },
+  { href: "/admin/estadisticas", label: "Informes",  icon: BarChart2 },
 ];
 
 export default function AdminNav() {
@@ -30,7 +32,7 @@ export default function AdminNav() {
     <>
       {/* ── SIDEBAR DESKTOP ── */}
       <aside className="hidden lg:flex bg-surface-container text-primary flex-col h-screen w-64 shrink-0 fixed top-0 left-0 z-40">
-        {/* Profile */}
+        {/* Perfil */}
         <div className="px-8 py-10 flex flex-col items-center border-b border-outline/15">
           <div className="w-16 h-16 bg-surface-container-high mb-4 overflow-hidden relative">
             <Image src="/logo.png" alt="HL" fill className="object-contain opacity-80 p-3" />
@@ -58,17 +60,29 @@ export default function AdminNav() {
           ))}
         </nav>
 
-        {/* CTA */}
-        <div className="p-4 space-y-3">
+        {/* Acciones de cuenta */}
+        <div className="p-4 space-y-2">
           <Link
             href="/admin/dashboard?nueva=1"
             className="w-full block py-4 bg-primary text-on-primary font-headline font-bold uppercase text-xs tracking-widest text-center hover:bg-primary-dim transition-all"
           >
             Nueva cita
           </Link>
+          <Link
+            href="/admin/perfil"
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-2.5 transition-colors font-label text-[10px] uppercase tracking-widest",
+              pathname === "/admin/perfil"
+                ? "text-primary bg-surface-container-high"
+                : "text-on-surface-variant hover:text-on-surface"
+            )}
+          >
+            <UserCog size={12} />
+            Perfil y contraseña
+          </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-3 text-on-surface-variant hover:text-on-surface transition-colors font-label text-[10px] uppercase tracking-widest"
+            className="w-full flex items-center justify-center gap-2 py-2.5 text-on-surface-variant hover:text-on-surface transition-colors font-label text-[10px] uppercase tracking-widest"
           >
             <LogOut size={12} />
             Cerrar sesión
@@ -84,13 +98,17 @@ export default function AdminNav() {
           </div>
           <span className="font-headline font-black text-sm uppercase tracking-tighter text-on-surface">{BUSINESS.name}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          {/* Ajustes — acceso a Perfil desde móvil */}
           <Link
-            href="/admin/dashboard?nueva=1"
-            className="flex items-center gap-1.5 bg-primary text-on-primary px-3 py-2 font-headline font-bold uppercase text-[10px] tracking-wider"
+            href="/admin/perfil"
+            className={cn(
+              "p-2 transition-colors",
+              pathname === "/admin/perfil" ? "text-primary" : "text-outline hover:text-on-surface"
+            )}
+            title="Perfil y contraseña"
           >
-            <Plus size={12} />
-            Nueva
+            <UserCog size={18} />
           </Link>
           <button
             onClick={handleLogout}
@@ -102,7 +120,7 @@ export default function AdminNav() {
         </div>
       </header>
 
-      {/* ── BOTTOM NAV MÓVIL ── */}
+      {/* ── BOTTOM NAV MÓVIL — 5 items, espacio suficiente ── */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-container border-t border-outline/15 flex">
         {NAV.map(({ href, label, icon: Icon }) => (
           <Link
@@ -110,9 +128,7 @@ export default function AdminNav() {
             href={href}
             className={cn(
               "flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors",
-              pathname === href
-                ? "text-primary"
-                : "text-on-surface-variant"
+              pathname === href ? "text-primary" : "text-on-surface-variant"
             )}
           >
             <Icon size={20} />

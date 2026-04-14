@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 
 export async function GET() {
   const servicios = await prisma.servicio.findMany({
@@ -22,5 +23,13 @@ export async function POST(req: NextRequest) {
   const servicio = await prisma.servicio.create({
     data: { nombre, precio: Number(precio), duracion: Number(duracion), nota: nota ?? null },
   });
+
+  await audit({
+    accion: "SERVICIO_CREADO",
+    entidad: "Servicio",
+    entidadId: servicio.id,
+    datos: { nombre, precio: Number(precio), duracion: Number(duracion), nota: nota ?? null },
+  });
+
   return NextResponse.json(servicio, { status: 201 });
 }

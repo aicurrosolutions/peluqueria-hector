@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { z } from "zod";
 
 const ClienteGetSchema = z.object({
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(clientes);
   } catch (e) {
-    console.error("[GET /api/clientes]", e);
+    logger.error("GET /api/clientes falló", e, { route: "GET /api/clientes" });
     return NextResponse.json({ error: "Error al buscar clientes" }, { status: 500 });
   }
 }
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(cliente);
   } catch (e) {
-    console.error("[POST /api/clientes]", e);
+    logger.error("POST /api/clientes falló", e, { route: "POST /api/clientes" });
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

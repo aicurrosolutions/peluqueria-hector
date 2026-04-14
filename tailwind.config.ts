@@ -40,6 +40,8 @@ const config: Config = {
         success: "#15803D",
         "success-container": "rgba(21,128,61,0.10)",
         "success-border": "#16A34A",
+        warning: "#B45309",
+        "warning-container": "rgba(180,83,9,0.10)",
       },
       fontFamily: {
         headline: ["var(--font-space-grotesk)", "sans-serif"],

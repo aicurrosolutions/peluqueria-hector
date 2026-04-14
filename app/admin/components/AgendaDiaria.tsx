@@ -196,8 +196,8 @@ export default function AgendaDiaria({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Navegación de día */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-outline/10 bg-surface sticky top-0 z-20">
+      {/* Navegación de día — solo en modo standalone (sin padre que ya muestre la fecha) */}
+      <div className={`flex items-center justify-between px-4 py-3 border-b border-outline/10 bg-surface sticky top-0 z-20 ${onFechaChange ? "hidden" : ""}`}>
         <button
           onClick={() => irDia(subDays(fecha, 1))}
           className="p-2 text-outline hover:text-on-surface border border-outline/20 hover:border-outline/40 transition-all"

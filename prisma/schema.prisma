@@ -72,9 +72,37 @@ model DiaAbierto {
   motivo String?
 }
 
+model Ausencia {
+  id      String   @id @default(cuid())
+  inicio  DateTime
+  fin     DateTime
+  motivo  String?
+  createdAt DateTime @default(now())
+
+  @@index([inicio])
+}
+
 enum EstadoCita {
   PENDIENTE
   CONFIRMADA
   CANCELADA
   COMPLETADA
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  accion    String   // "HORARIO_ACTUALIZADO", "SERVICIO_CREADO", "CITA_CANCELADA", etc.
+  entidad   String   // "HorarioFranja", "Servicio", "Cita"
+  entidadId String?  // ID del recurso afectado (nullable para operaciones masivas)
+  datos     Json?    // snapshot de los cambios realizados
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entidad])
+}
+
+model AdminCredential {
+  id           String   @id @default("singleton")
+  passwordHash String   // scrypt hash: "salt:derivedKey" (hex)
+  updatedAt    DateTime @updatedAt
 }

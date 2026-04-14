@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { parseISO, startOfDay } from "date-fns";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +28,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     include: { servicio: true },
   });
 
+  await audit({
+    accion: "CITA_ACTUALIZADA",
+    entidad: "Cita",
+    entidadId: id,
+    datos: { cambios: data },
+  });
+
   return NextResponse.json(cita);
 }
 
@@ -36,5 +44,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const { id } = await params;
   await prisma.cita.update({ where: { id }, data: { estado: "CANCELADA" } });
+
+  await audit({
+    accion: "CITA_CANCELADA_ADMIN",
+    entidad: "Cita",
+    entidadId: id,
+  });
+
   return NextResponse.json({ ok: true });
 }

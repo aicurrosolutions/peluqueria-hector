@@ -1,0 +1,66 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Todos los días a las 3:00 AM UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    # Permite ejecutar el backup manualmente desde GitHub Actions
+
+jobs:
+  backup:
+    name: pg_dump → artefacto cifrado
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Instalar cliente PostgreSQL
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+
+      - name: Ejecutar pg_dump
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Extraer componentes de la URL de conexión
+          # Formato esperado: postgresql://user:pass@host:port/dbname
+          pg_dump "$DATABASE_URL" \
+            --format=custom \
+            --no-acl \
+            --no-owner \
+            --verbose \
+            --file=backup.dump
+          echo "Backup completado: $(du -sh backup.dump | cut -f1)"
+
+      - name: Comprimir y cifrar backup
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+          FILENAME="backup_${TIMESTAMP}.dump.gpg"
+          gpg --batch --symmetric \
+              --cipher-algo AES256 \
+              --passphrase "$BACKUP_PASSPHRASE" \
+              --output "$FILENAME" \
+              backup.dump
+          echo "BACKUP_FILE=$FILENAME" >> $GITHUB_ENV
+          echo "Backup cifrado: $(du -sh $FILENAME | cut -f1)"
+
+      - name: Subir backup como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30
+
+      - name: Verificar integridad del backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          # Descifrar y verificar que pg_restore puede leer el dump
+          gpg --batch --decrypt \
+              --passphrase "$BACKUP_PASSPHRASE" \
+              "${{ env.BACKUP_FILE }}" | pg_restore --list > /dev/null
+          echo "Integridad verificada correctamente"
