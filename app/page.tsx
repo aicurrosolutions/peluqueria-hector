@@ -107,7 +107,7 @@ export default async function Home() {
               </div>
               <div className="flex items-center gap-10 mt-8 md:mt-0">
                 <span className="text-4xl md:text-5xl font-headline font-bold text-primary">{s.precio}€</span>
-                <Link href="/reservar" className="bg-surface-bright text-on-surface px-6 py-3 font-headline font-bold uppercase text-xs tracking-widest group-hover:bg-primary group-hover:text-on-primary transition-all">
+                <Link href={`/reservar?servicioId=${s.id}`} className="bg-surface-bright text-on-surface px-6 py-3 font-headline font-bold uppercase text-xs tracking-widest group-hover:bg-primary group-hover:text-on-primary transition-all">
                   Reservar
                 </Link>
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { DayPicker, type DayButtonProps } from "react-day-picker";
@@ -24,11 +25,13 @@ interface Servicio {
   precio: number;
   duracion: number;
   nota?: string | null;
+  diasDisponibles: number[];
 }
 
 type Paso = "servicio" | "fecha" | "hora" | "datos" | "confirmado";
 
 export default function ReservarCliente() {
+  const searchParams = useSearchParams();
   const [paso, setPaso] = useState<Paso>("servicio");
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const refFecha = useRef<HTMLElement>(null);
@@ -56,9 +59,26 @@ export default function ReservarCliente() {
     }
   }, [paso]);
 
+  // Cargar servicios y horario en paralelo
   useEffect(() => {
-    fetch("/api/servicios").then((r) => r.json()).then(setServicios).catch(() => {});
-    fetch("/api/horario").then((r) => r.json()).then(setHorario).catch(() => {});
+    Promise.all([
+      fetch("/api/servicios").then((r) => r.json()),
+      fetch("/api/horario").then((r) => r.json()),
+    ]).then(([svcs, h]) => {
+      setServicios(svcs);
+      setHorario(h);
+
+      // Pre-selección desde URL (?servicioId=xxx) — se ejecuta una vez cargados los servicios
+      const idParam = searchParams.get("servicioId");
+      if (idParam) {
+        const encontrado = (svcs as Servicio[]).find((s: Servicio) => s.id === idParam);
+        if (encontrado) {
+          setServicioSel(encontrado);
+          setPaso("fecha");
+        }
+      }
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -78,6 +98,8 @@ export default function ReservarCliente() {
     if (horario.diasEspecialesCerrados.includes(fechaStr)) return true;
     if (horario.diasEspecialesAbiertos.includes(fechaStr)) return false;
     if (!horario.diasSemanaAbiertos.includes(date.getDay())) return true;
+    // Si el servicio tiene días restringidos, bloquear los demás
+    if (servicioSel?.diasDisponibles?.length && !servicioSel.diasDisponibles.includes(date.getDay())) return true;
     return false;
   };
 
@@ -158,7 +180,7 @@ export default function ReservarCliente() {
 
   return (
     <div className="min-h-screen bg-background text-on-surface">
-      {/* Header */}
+      {/* Header — sin botón "Reservar cita" (ya estamos en la página de reserva) */}
       <header className="bg-background sticky top-0 z-50 flex justify-between items-center px-8 py-6">
         <Link href="/" className="flex items-center gap-3 text-outline hover:text-on-surface transition-colors">
           <ArrowLeft size={16} />
@@ -166,11 +188,16 @@ export default function ReservarCliente() {
         </Link>
         <div className="flex items-center gap-3">
           <Image src="/logo.png" alt="HL" width={24} height={24} className="invert opacity-80" />
-          <span className="font-headline font-black uppercase tracking-tighter text-on-surface hidden sm:block">{BUSINESS.name}</span>
+          <span className="font-headline font-black uppercase tracking-tighter text-on-surface">{BUSINESS.name}</span>
         </div>
-        <Link href="/reservar" className="bg-primary text-on-primary px-6 py-2.5 font-headline font-bold uppercase tracking-wider text-xs hover:bg-primary-dim transition-all">
-          Reservar cita
-        </Link>
+        {/* Indicador de paso */}
+        <div className="flex items-center gap-2">
+          {pasos.map((p, i) => (
+            <span key={p} className={`text-[10px] font-label uppercase tracking-widest hidden sm:block ${i === pasoIdx ? "text-primary" : "text-outline/40"}`}>
+              {i > 0 && <span className="mr-2 opacity-30">·</span>}{p}
+            </span>
+          ))}
+        </div>
       </header>
 
       {/* Progress bar */}
@@ -206,7 +233,11 @@ export default function ReservarCliente() {
                         setPaso("fecha");
                       } else if (different && paso === "datos") {
                         setHoraSel(null);
-                        setPaso("hora");
+                        setFechaSel(undefined);
+                        setPaso("fecha");
+                      } else if (different) {
+                        setHoraSel(null);
+                        setFechaSel(undefined);
                       }
                     }}
                     className={`w-full group flex items-center justify-between p-8 md:p-10 cursor-pointer transition-colors duration-300 text-left ${
@@ -242,6 +273,11 @@ export default function ReservarCliente() {
                   <h2 className="font-headline text-5xl md:text-6xl font-bold tracking-tight text-on-surface uppercase leading-none">
                     Fecha &<br />Hora
                   </h2>
+                  {servicioSel?.diasDisponibles?.length ? (
+                    <p className="text-outline text-xs font-body mt-3">
+                      Este servicio solo está disponible los días resaltados en el calendario.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Calendario */}

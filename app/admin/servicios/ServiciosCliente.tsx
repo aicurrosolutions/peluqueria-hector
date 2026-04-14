@@ -3,26 +3,33 @@
 import { useState } from "react";
 import { Pencil, Plus, Check, X } from "lucide-react";
 
+const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
 interface Servicio {
   id: string;
   nombre: string;
   precio: number;
   duracion: number;
   nota?: string | null;
+  diasDisponibles: number[];
   activo: boolean;
 }
+
+type FormState = { nombre: string; precio: string; duracion: string; nota: string; diasDisponibles: number[] };
+
+const FORM_VACIO: FormState = { nombre: "", precio: "", duracion: "", nota: "", diasDisponibles: [] };
 
 export default function ServiciosCliente({ serviciosIniciales }: { serviciosIniciales: Servicio[] }) {
   const [servicios, setServicios] = useState(serviciosIniciales);
   const [editando, setEditando] = useState<string | null>(null);
-  const [form, setForm] = useState({ nombre: "", precio: "", duracion: "", nota: "" });
+  const [form, setForm] = useState<FormState>(FORM_VACIO);
   const [nuevo, setNuevo] = useState(false);
-  const [nuevoForm, setNuevoForm] = useState({ nombre: "", precio: "", duracion: "", nota: "" });
+  const [nuevoForm, setNuevoForm] = useState<FormState>(FORM_VACIO);
   const [cargando, setCargando] = useState(false);
 
   const startEdit = (s: Servicio) => {
     setEditando(s.id);
-    setForm({ nombre: s.nombre, precio: String(s.precio), duracion: String(s.duracion), nota: s.nota ?? "" });
+    setForm({ nombre: s.nombre, precio: String(s.precio), duracion: String(s.duracion), nota: s.nota ?? "", diasDisponibles: s.diasDisponibles ?? [] });
   };
 
   const guardarEdicion = async (id: string) => {
@@ -30,7 +37,7 @@ export default function ServiciosCliente({ serviciosIniciales }: { serviciosInic
     const res = await fetch(`/api/servicios/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre: form.nombre, precio: Number(form.precio), duracion: Number(form.duracion), nota: form.nota || null }),
+      body: JSON.stringify({ nombre: form.nombre, precio: Number(form.precio), duracion: Number(form.duracion), nota: form.nota || null, diasDisponibles: form.diasDisponibles }),
     });
     const actualizado = await res.json();
     setServicios((prev) => prev.map((s) => (s.id === id ? actualizado : s)));
@@ -56,12 +63,12 @@ export default function ServiciosCliente({ serviciosIniciales }: { serviciosInic
     const res = await fetch("/api/servicios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nombre: nuevoForm.nombre, precio: Number(nuevoForm.precio), duracion: Number(nuevoForm.duracion), nota: nuevoForm.nota || null }),
+      body: JSON.stringify({ nombre: nuevoForm.nombre, precio: Number(nuevoForm.precio), duracion: Number(nuevoForm.duracion), nota: nuevoForm.nota || null, diasDisponibles: nuevoForm.diasDisponibles }),
     });
     const creado = await res.json();
     setServicios((prev) => [...prev, creado]);
     setNuevo(false);
-    setNuevoForm({ nombre: "", precio: "", duracion: "", nota: "" });
+    setNuevoForm(FORM_VACIO);
     setCargando(false);
   };
 
@@ -88,6 +95,14 @@ export default function ServiciosCliente({ serviciosIniciales }: { serviciosInic
                       <Input value={form.nota} onChange={(v) => setForm((f) => ({ ...f, nota: v }))} />
                     </Field>
                   </div>
+                  <div className="sm:col-span-3">
+                    <Field label="Días disponibles (vacío = todos los días)">
+                      <DiaSelector
+                        value={form.diasDisponibles}
+                        onChange={(dias) => setForm((f) => ({ ...f, diasDisponibles: dias }))}
+                      />
+                    </Field>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => guardarEdicion(s.id)} disabled={cargando} className="flex items-center gap-2 bg-primary text-on-primary text-xs font-headline font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-primary-dim transition-all disabled:opacity-40">
@@ -104,6 +119,11 @@ export default function ServiciosCliente({ serviciosIniciales }: { serviciosInic
                   <p className="text-on-surface font-headline font-bold text-sm md:text-base uppercase tracking-tight truncate">{s.nombre}</p>
                   <p className="text-outline text-xs mt-0.5 font-body">{s.duracion} min · <span className="text-primary font-bold">{s.precio}€</span></p>
                   {s.nota && <p className="text-primary/50 text-[10px] mt-0.5 font-label uppercase tracking-wider">{s.nota}</p>}
+                  {s.diasDisponibles?.length > 0 && (
+                    <p className="text-outline/60 text-[10px] mt-0.5 font-label uppercase tracking-wider">
+                      Solo: {s.diasDisponibles.map((d) => DIAS[d]).join(", ")}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
@@ -145,6 +165,14 @@ export default function ServiciosCliente({ serviciosIniciales }: { serviciosInic
                 <Input value={nuevoForm.nota} onChange={(v) => setNuevoForm((f) => ({ ...f, nota: v }))} />
               </Field>
             </div>
+            <div className="sm:col-span-3">
+              <Field label="Días disponibles (vacío = todos los días)">
+                <DiaSelector
+                  value={nuevoForm.diasDisponibles}
+                  onChange={(dias) => setNuevoForm((f) => ({ ...f, diasDisponibles: dias }))}
+                />
+              </Field>
+            </div>
           </div>
           <div className="flex gap-2">
             <button onClick={crearServicio} disabled={cargando} className="flex items-center gap-2 bg-primary text-on-primary text-xs font-headline font-bold tracking-widest uppercase px-4 py-2.5 hover:bg-primary-dim disabled:opacity-40">
@@ -163,6 +191,48 @@ export default function ServiciosCliente({ serviciosIniciales }: { serviciosInic
     </div>
   );
 }
+
+// ── Selector de días ──────────────────────────────────────────────────────────
+
+function DiaSelector({ value, onChange }: { value: number[]; onChange: (dias: number[]) => void }) {
+  const toggle = (dia: number) => {
+    if (value.includes(dia)) {
+      onChange(value.filter((d) => d !== dia));
+    } else {
+      onChange([...value, dia].sort((a, b) => a - b));
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {DIAS.map((nombre, idx) => (
+        <button
+          key={idx}
+          type="button"
+          onClick={() => toggle(idx)}
+          className={`px-3 py-1.5 text-[10px] font-label uppercase tracking-widest border transition-all ${
+            value.includes(idx)
+              ? "bg-primary text-on-primary border-primary"
+              : "border-outline/20 text-outline hover:border-primary/40 hover:text-primary"
+          }`}
+        >
+          {nombre}
+        </button>
+      ))}
+      {value.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onChange([])}
+          className="px-3 py-1.5 text-[10px] font-label uppercase tracking-widest border border-outline/10 text-outline/40 hover:text-error hover:border-error/30 transition-all ml-1"
+        >
+          Todos
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Primitivos de formulario ──────────────────────────────────────────────────
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

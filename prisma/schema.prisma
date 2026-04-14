@@ -9,15 +9,16 @@ datasource db {
 }
 
 model Servicio {
-  id        String   @id @default(cuid())
-  nombre    String
-  precio    Float
-  duracion  Int      // en minutos
-  nota      String?  // ej: "Solo lunes y martes"
-  activo    Boolean  @default(true)
-  citas     Cita[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  nombre          String
+  precio          Float
+  duracion        Int      // en minutos
+  nota            String?  // ej: "Solo lunes y martes"
+  diasDisponibles Int[]    // 0=Dom…6=Sáb; vacío = todos los días
+  activo          Boolean  @default(true)
+  citas           Cita[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Cliente {

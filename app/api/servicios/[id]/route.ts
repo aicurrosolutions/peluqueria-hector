@@ -10,6 +10,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
+  const dias = Array.isArray(body.diasDisponibles)
+    ? body.diasDisponibles.map(Number).filter((d: number) => d >= 0 && d <= 6)
+    : undefined;
+
   const servicio = await prisma.servicio.update({
     where: { id },
     data: {
@@ -18,6 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       duracion: body.duracion !== undefined ? Number(body.duracion) : undefined,
       nota: body.nota !== undefined ? body.nota : undefined,
       activo: body.activo,
+      diasDisponibles: dias,
     },
   });
 
