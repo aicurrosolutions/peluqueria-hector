@@ -1,24 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generarSlots, HORARIO_DEFAULT } from "@/lib/horarios";
+import { generarSlots, timeToMinutes, HORARIO_DEFAULT } from "@/lib/horarios";
 import { parseISO, startOfDay, endOfDay } from "date-fns";
 import { z } from "zod";
 
 const DisponibilidadSchema = z.object({
-  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha debe ser YYYY-MM-DD"),
+  fecha:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha debe ser YYYY-MM-DD"),
   duracion: z.coerce.number().int().min(5).max(480).default(30),
 });
 
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
-
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-
   const parsed = DisponibilidadSchema.safeParse({
-    fecha: searchParams.get("fecha"),
+    fecha:    searchParams.get("fecha"),
     duracion: searchParams.get("duracion"),
   });
 
@@ -30,56 +24,50 @@ export async function GET(req: NextRequest) {
   }
 
   const { fecha: fechaStr, duracion } = parsed.data;
-  const fecha = parseISO(fechaStr);
-  const diaSemana = fecha.getDay();
-
+  const fecha      = parseISO(fechaStr);
   const fechaInicio = startOfDay(fecha);
+  const diaSemana  = fecha.getDay();
 
-  // Verificar si el admin ha abierto este día expresamente
-  const [diaAbierto, diaCerrado, ausencia] = await Promise.all([
-    prisma.diaAbierto.findUnique({ where: { fecha: fechaInicio } }),
-    prisma.diaCerrado.findUnique({ where: { fecha: fechaInicio } }),
-    prisma.ausencia.findFirst({ where: { inicio: { lte: fechaInicio }, fin: { gte: fechaInicio } } }),
+  // Un solo round trip — todas las queries en paralelo
+  const [diaAbierto, diaCerrado, ausencia, franjasDB, citasDelDia] = await Promise.all([
+    prisma.diaAbierto.findUnique({ where: { fecha: fechaInicio }, select: { id: true } }),
+    prisma.diaCerrado.findUnique({ where: { fecha: fechaInicio }, select: { id: true } }),
+    prisma.ausencia.findFirst({
+      where: { inicio: { lte: fechaInicio }, fin: { gte: fechaInicio } },
+      select: { id: true },
+    }),
+    prisma.horarioFranja.findMany({
+      where: { diaSemana, activo: true },
+      orderBy: { inicio: "asc" },
+      select: { inicio: true, fin: true },
+    }),
+    prisma.cita.findMany({
+      where: {
+        fecha:  { gte: fechaInicio, lte: endOfDay(fecha) },
+        estado: { not: "CANCELADA" },
+      },
+      select: { hora: true, servicio: { select: { duracion: true } } },
+    }),
   ]);
 
   if (diaCerrado || ausencia) return NextResponse.json({ slots: [] });
 
-  // Obtener franjas del horario desde BD
-  let franjas = await prisma.horarioFranja.findMany({
-    where: { diaSemana, activo: true },
-    orderBy: { inicio: "asc" },
-    select: { inicio: true, fin: true },
-  });
+  let franjas = franjasDB;
 
-  // Si el día no tiene horario en BD pero el admin lo abrió expresamente,
-  // usar el horario por defecto del sábado como fallback
   if (!franjas.length && diaAbierto) {
-    const fallback = HORARIO_DEFAULT[6] ?? [];
-    franjas = fallback.map((f) => ({ inicio: f.inicio, fin: f.fin }));
+    franjas = (HORARIO_DEFAULT[6] ?? []).map((f) => ({ inicio: f.inicio, fin: f.fin }));
   }
 
-  // Si no hay franjas y no está abierto expresamente → cerrado
-  if (!franjas.length && !diaAbierto) {
-    return NextResponse.json({ slots: [] });
-  }
-
-  // Citas del día para filtrar solapamientos
-  const citasDelDia = await prisma.cita.findMany({
-    where: {
-      fecha: { gte: startOfDay(fecha), lte: endOfDay(fecha) },
-      estado: { not: "CANCELADA" },
-    },
-    select: { hora: true, servicio: { select: { duracion: true } } },
-  });
+  if (!franjas.length) return NextResponse.json({ slots: [] });
 
   const todosSlots = generarSlots(duracion, franjas);
 
   const disponibles = todosSlots.filter((slotHora) => {
     const slotInicio = timeToMinutes(slotHora);
-    const slotFin = slotInicio + duracion;
+    const slotFin    = slotInicio + duracion;
     return !citasDelDia.some((cita) => {
       const citaInicio = timeToMinutes(cita.hora);
-      const citaFin = citaInicio + cita.servicio.duracion;
+      const citaFin    = citaInicio + cita.servicio.duracion;
       return citaInicio < slotFin && citaFin > slotInicio;
     });
   });

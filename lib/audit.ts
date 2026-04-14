@@ -19,7 +19,7 @@ export async function audit(params: AuditParams): Promise<void> {
         accion: params.accion,
         entidad: params.entidad,
         entidadId: params.entidadId ?? null,
-        datos: params.datos ?? undefined,
+        datos: params.datos ? JSON.parse(JSON.stringify(params.datos)) : undefined,
       },
     });
   } catch (e) {

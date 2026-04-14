@@ -4,12 +4,8 @@ import { getAdminSession } from "@/lib/auth";
 import { parseISO, startOfDay, endOfDay, subMinutes } from "date-fns";
 import { enviarConfirmacion, notificarBarber } from "@/lib/email";
 import { logger } from "@/lib/logger";
+import { timeToMinutes } from "@/lib/horarios";
 import { z } from "zod";
-
-function timeToMinutes(t: string): number {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
 
 const CitaPostSchema = z.object({
   servicioId: z.string().min(1),
@@ -49,7 +45,11 @@ export async function GET(req: NextRequest) {
 
   const citas = await prisma.cita.findMany({
     where,
-    include: { servicio: true },
+    select: {
+      id: true, fecha: true, hora: true, nombre: true,
+      telefono: true, email: true, estado: true, notas: true,
+      servicio: { select: { id: true, nombre: true, precio: true, duracion: true } },
+    },
     orderBy: [{ fecha: "asc" }, { hora: "asc" }],
   });
 
@@ -83,30 +83,21 @@ export async function POST(req: NextRequest) {
     }
     const fechaDate = parseISO(fecha);
 
-    // ── Seguridad: rate limiting por teléfono ──────────────────────────────
-    // 1. Mismo teléfono no puede reservar más de 1 cita en los últimos 10 minutos
-    const hace10min = subMinutes(new Date(), 10);
-    const reservasRecientes = await prisma.cita.count({
-      where: {
-        telefono,
-        createdAt: { gte: hace10min },
-      },
-    });
+    // ── Seguridad: rate limiting por teléfono (paralelo) ──────────────────
+    const [reservasRecientes, citasActivasFuturas] = await Promise.all([
+      prisma.cita.count({
+        where: { telefono, createdAt: { gte: subMinutes(new Date(), 10) } },
+      }),
+      prisma.cita.count({
+        where: { telefono, estado: { in: ["PENDIENTE", "CONFIRMADA"] }, fecha: { gte: startOfDay(new Date()) } },
+      }),
+    ]);
     if (reservasRecientes > 0) {
       return NextResponse.json(
         { error: "Acabas de hacer una reserva. Espera unos minutos antes de hacer otra." },
         { status: 429 }
       );
     }
-
-    // 2. Mismo teléfono no puede tener más de 2 citas activas (pendiente/confirmada) en el futuro
-    const citasActivasFuturas = await prisma.cita.count({
-      where: {
-        telefono,
-        estado: { in: ["PENDIENTE", "CONFIRMADA"] },
-        fecha: { gte: startOfDay(new Date()) },
-      },
-    });
     if (citasActivasFuturas >= 2) {
       return NextResponse.json(
         { error: "Ya tienes 2 citas reservadas. Cancela una antes de hacer otra nueva." },

@@ -1,5 +1,10 @@
 import { format, addMinutes, parse, isAfter, isBefore } from "date-fns";
 
+export function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
 export type FranjaHoraria = { inicio: string; fin: string };
 
 // Horario por defecto usado como SEED inicial en la BD

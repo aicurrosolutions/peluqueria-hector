@@ -100,7 +100,7 @@ export default function EstadisticasView({
                         contentStyle={{ background: COLOR_SURFACE, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 0, fontSize: 12 }}
                         labelStyle={{ color: "rgba(255,255,255,0.6)", marginBottom: 4 }}
                         itemStyle={{ color: COLOR_PRIMARY }}
-                        formatter={(v: number) => [`${v.toFixed(0)}€`, "Ingresos"]}
+                        formatter={(v) => [`${Number(v ?? 0).toFixed(0)}€`, "Ingresos"]}
                         cursor={{ fill: "rgba(255,255,255,0.04)" }}
                       />
                       <Bar dataKey="ingresos" fill={COLOR_PRIMARY} radius={0} maxBarSize={36} />
@@ -132,7 +132,7 @@ export default function EstadisticasView({
                         contentStyle={{ background: COLOR_SURFACE, border: "1px solid rgba(255,255,255,0.1)", borderRadius: 0, fontSize: 12 }}
                         labelStyle={{ color: "rgba(255,255,255,0.6)", marginBottom: 4 }}
                         itemStyle={{ color: COLOR_PRIMARY }}
-                        formatter={(v: number) => [v, "Citas"]}
+                        formatter={(v) => [Number(v ?? 0), "Citas"]}
                         cursor={{ stroke: "rgba(255,255,255,0.1)" }}
                       />
                       <Line
