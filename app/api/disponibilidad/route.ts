@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   let franjas = franjasDB;
 
   if (!franjas.length && diaAbierto) {
-    franjas = (HORARIO_DEFAULT[6] ?? []).map((f) => ({ inicio: f.inicio, fin: f.fin }));
+    franjas = (HORARIO_DEFAULT[diaSemana] ?? []).map((f) => ({ inicio: f.inicio, fin: f.fin }));
   }
 
   if (!franjas.length) return NextResponse.json({ slots: [] });

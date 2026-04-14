@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { HORARIO_DEFAULT } from "@/lib/horarios";
 import { format, startOfDay, eachDayOfInterval } from "date-fns";
 
 // Endpoint público — devuelve lo necesario para que el calendario del cliente
@@ -26,7 +27,13 @@ export async function GET() {
     }),
   ]);
 
-  const diasSemanaAbiertos = [...new Set(franjas.map((f) => f.diaSemana))];
+  // Si HorarioFranja aún no fue configurado (BD vacía), usar el horario por defecto
+  // para que el calendario público no deshabilite todos los días
+  const diasSemanaAbiertos = franjas.length > 0
+    ? [...new Set(franjas.map((f) => f.diaSemana))]
+    : Object.entries(HORARIO_DEFAULT)
+        .filter(([, franjasDia]) => franjasDia.length > 0)
+        .map(([dia]) => parseInt(dia));
 
   // Expandir rangos de ausencia a días individuales para el calendario del cliente
   const diasAusencia = ausencias.flatMap((a) =>
