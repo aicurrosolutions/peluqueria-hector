@@ -138,8 +138,15 @@ export default function AgendaHub({
   const [cargando, setCargando] = useState(false);
   const [nuevaCita, setNuevaCita] = useState<{ fecha: string; hora: string } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [hoy, setHoy] = useState<string | null>(null);
+  const [ahoraMin, setAhoraMin] = useState<number | null>(null);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    const now = new Date();
+    setHoy(format(now, "yyyy-MM-dd"));
+    setAhoraMin(now.getHours() * 60 + now.getMinutes());
+  }, []);
 
   useEffect(() => {
     setFechaSel(parseISO(fechaInicialISO));
@@ -180,15 +187,15 @@ export default function AgendaHub({
   const ingresos     = citasActivas.reduce((acc, c) => acc + c.servicio.precio, 0);
   const canceladas   = citasDia.filter((c) => c.estado === "CANCELADA").length;
   const pendientes   = citasDia.filter((c) => c.estado === "PENDIENTE" || c.estado === "CONFIRMADA").length;
-  const esHoy        = format(fechaSel, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+  // hoy y ahoraMin se inicializan en useEffect — null en SSR para evitar hydration mismatch
+  const esHoy = hoy !== null && format(fechaSel, "yyyy-MM-dd") === hoy;
 
   const proximaCita = (() => {
     const activas = citasDia
       .filter((c) => c.estado === "PENDIENTE" || c.estado === "CONFIRMADA")
       .sort((a, b) => a.hora.localeCompare(b.hora));
     if (!activas.length) return null;
-    if (!esHoy) return activas[0];
-    const ahoraMin = new Date().getHours() * 60 + new Date().getMinutes();
+    if (!esHoy || ahoraMin === null) return activas[0];
     return activas.find((c) => {
       const [h, m] = c.hora.split(":").map(Number);
       return h * 60 + m >= ahoraMin;

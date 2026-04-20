@@ -67,19 +67,22 @@ export default function ReservarCliente() {
     ]).then(([svcs, h]) => {
       setServicios(svcs);
       setHorario(h);
-
-      // Pre-selección desde URL (?servicioId=xxx) — se ejecuta una vez cargados los servicios
-      const idParam = searchParams.get("servicioId");
-      if (idParam) {
-        const encontrado = (svcs as Servicio[]).find((s: Servicio) => s.id === idParam);
-        if (encontrado) {
-          setServicioSel(encontrado);
-          setPaso("fecha");
-        }
-      }
     }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Pre-selección desde URL (?servicioId=xxx) — efecto separado para evitar stale closure
+  // Se ejecuta una vez que los servicios están cargados
+  useEffect(() => {
+    if (!servicios.length) return;
+    const idParam = searchParams.get("servicioId");
+    if (!idParam) return;
+    const encontrado = servicios.find((s) => s.id === idParam);
+    if (encontrado) {
+      setServicioSel(encontrado);
+      setPaso("fecha");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [servicios]);
 
   useEffect(() => {
     if (!fechaSel || !servicioSel) return;
