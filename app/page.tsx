@@ -21,6 +21,52 @@ export default async function Home() {
     franjas: franjasBD.filter((f) => f.diaSemana === dia),
   }));
 
+  // JSON-LD Schema.org — barbería local para Google
+  const DIAS_SCHEMA = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const openingHours = horarioPorDia
+    .filter((d) => d.franjas.length > 0)
+    .flatMap((d) =>
+      d.franjas.map((f) => ({
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: `https://schema.org/${DIAS_SCHEMA[d.dia]}`,
+        opens: f.inicio,
+        closes: f.fin,
+      }))
+    );
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HairSalon",
+    name: BUSINESS.name,
+    description: BUSINESS.description,
+    url: BUSINESS.url,
+    telephone: BUSINESS.telefono,
+    image: `${BUSINESS.url}/fondo.hero.jpg`,
+    priceRange: "€€",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "C. Martinetes, 7, Local 10",
+      postalCode: "41800",
+      addressLocality: "Sanlúcar la Mayor",
+      addressRegion: "Sevilla",
+      addressCountry: "ES",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: 37.3869,
+      longitude: -6.2024,
+    },
+    sameAs: [`https://instagram.com/${BUSINESS.instagram}`],
+    openingHoursSpecification: openingHours,
+    hasMap: `https://maps.google.com/?q=${encodeURIComponent(BUSINESS.direccion)}`,
+    makesOffer: servicios.map((s) => ({
+      "@type": "Offer",
+      name: s.nombre,
+      price: s.precio,
+      priceCurrency: "EUR",
+    })),
+  };
+
   return (
     <main className="min-h-screen bg-background text-on-surface">
 
@@ -300,6 +346,11 @@ export default async function Home() {
           <p className="text-outline/40 text-[10px] uppercase tracking-[0.2em] font-label">© {new Date().getFullYear()} {BUSINESS.name}. Todos los derechos reservados.</p>
         </div>
       </footer>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </main>
   );
 }

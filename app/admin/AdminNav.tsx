@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Scissors, BarChart2, LogOut, Clock, UserCog, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BUSINESS } from "@/lib/config";
+import PushToggle from "./components/PushToggle";
 
 // 4 items en bottom nav móvil — holgado y legible
 // Calendario se unificó con Estadísticas
@@ -80,6 +81,7 @@ export default function AdminNav() {
             <UserCog size={12} />
             Perfil y contraseña
           </Link>
+          <PushToggle />
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 py-2.5 text-on-surface-variant hover:text-on-surface transition-colors font-label text-[10px] uppercase tracking-widest"

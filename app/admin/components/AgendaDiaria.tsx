@@ -106,6 +106,7 @@ export default function AgendaDiaria({
   const [citas, setCitas] = useState<Cita[]>(citasIniciales);
   const [cargando, setCargando] = useState(false);
   const [citaActiva, setCitaActiva] = useState<Cita | null>(null);
+  const [completandoId, setCompletandoId] = useState<string | null>(null);
   const ahoraRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -309,18 +310,21 @@ export default function AgendaDiaria({
                 const topPx = horaPx(cita.hora);
                 const heightPx = Math.max((cita.servicio.duracion / 15) * ALTURA_SLOT - 2, ALTURA_SLOT - 2);
                 const activa = citaActiva?.id === cita.id;
+                const puedeCompletar = cita.estado === "PENDIENTE" || cita.estado === "CONFIRMADA";
 
                 return (
-                  <button
+                  <div
                     key={cita.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setCitaActiva(activa ? null : cita)}
-                    className={`absolute left-1 right-1 z-[1] rounded-[2px] px-2.5 py-1.5 overflow-hidden text-left transition-all ${
+                    onKeyDown={(e) => e.key === "Enter" && setCitaActiva(activa ? null : cita)}
+                    className={`absolute left-1 right-1 z-[1] rounded-[2px] px-2.5 py-1.5 overflow-hidden text-left transition-all cursor-pointer group ${
                       ESTADO_BG[cita.estado] ?? "bg-surface-container border-l-2 border-outline/20"
                     } ${activa ? "ring-1 ring-primary/60" : "hover:brightness-110"}`}
                     style={{ top: topPx + 1, height: heightPx }}
                   >
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pr-5">
                       <span className="text-[10px] font-label font-bold text-outline/60 shrink-0">{cita.hora}</span>
                       <p className={`text-[11px] font-headline font-bold uppercase tracking-tight leading-tight truncate ${NOMBRE_COLOR[cita.estado] ?? "text-on-surface"}`}>
                         {cita.nombre}
@@ -331,7 +335,23 @@ export default function AgendaDiaria({
                         </p>
                       )}
                     </div>
-                  </button>
+                    {puedeCompletar && (
+                      <button
+                        type="button"
+                        title="Marcar completada"
+                        disabled={completandoId === cita.id}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setCompletandoId(cita.id);
+                          await actualizarCita(cita.id, { estado: "COMPLETADA" });
+                          setCompletandoId(null);
+                        }}
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-5 h-5 flex items-center justify-center bg-success-container text-success hover:bg-success hover:text-on-primary rounded-[2px] disabled:opacity-40"
+                      >
+                        <Check size={10} strokeWidth={3} />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

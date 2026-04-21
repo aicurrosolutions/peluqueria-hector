@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { parseISO, startOfDay, endOfDay, subMinutes } from "date-fns";
 import { enviarConfirmacion, notificarBarber } from "@/lib/email";
+import { enviarPushNuevaCita } from "@/lib/push";
 import { logger } from "@/lib/logger";
 import { timeToMinutes } from "@/lib/horarios";
 import { z } from "zod";
@@ -176,12 +177,13 @@ export async function POST(req: NextRequest) {
       throw e;
     }
 
-    // Emails en paralelo — fallan silenciosamente para no bloquear la respuesta
+    // Emails y push en paralelo — fallan silenciosamente para no bloquear la respuesta
     await Promise.allSettled([
       emailVal
         ? enviarConfirmacion({ nombre, email: emailVal, servicio: servicio.nombre, fecha: fechaDate, hora, citaId: cita.id })
         : Promise.resolve(),
       notificarBarber({ nombre, email: emailVal ?? "", telefono, servicio: servicio.nombre, fecha: fechaDate, hora, citaId: cita.id }),
+      enviarPushNuevaCita({ nombre, servicio: servicio.nombre, fecha: fechaDate, hora }),
     ]);
 
     return NextResponse.json(cita, { status: 201 });

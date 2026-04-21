@@ -108,3 +108,11 @@ model AdminCredential {
   passwordHash String   // scrypt hash: "salt:derivedKey" (hex)
   updatedAt    DateTime @updatedAt
 }
+
+model PushSuscripcion {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}

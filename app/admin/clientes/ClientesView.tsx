@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Users, Star, TrendingDown, AlertTriangle, Moon, Sparkles, Search } from "lucide-react";
+import { Users, Star, TrendingDown, AlertTriangle, Moon, Sparkles, Search, Download } from "lucide-react";
 import type { ClienteConStats } from "./page";
 
 type Categoria = ClienteConStats["categoria"];
@@ -52,6 +52,35 @@ const CATEGORIAS: { key: Categoria; label: string; desc: string; icon: React.Ele
   },
 ];
 
+function exportarCSV(clientes: ClienteConStats[]) {
+  const LABELS: Record<string, string> = {
+    frecuente: "Frecuente", regular: "Regular", en_riesgo: "En riesgo",
+    inactivo: "Inactivo", nuevo: "Nuevo",
+  };
+  const cabecera = ["Nombre", "Teléfono", "Email", "Categoría", "Visitas", "Gasto total (€)", "Última visita", "Días sin venir", "Servicio favorito"];
+  const filas = clientes.map((c) => [
+    c.nombre,
+    c.telefono,
+    c.email ?? "",
+    LABELS[c.categoria] ?? c.categoria,
+    c.totalVisitas,
+    c.gastoTotal,
+    c.ultimaVisita ? format(parseISO(c.ultimaVisita), "dd/MM/yyyy", { locale: es }) : "",
+    c.diasDesdeUltima ?? "",
+    c.servicioFavorito ?? "",
+  ]);
+  const csv = [cabecera, ...filas]
+    .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `clientes-${format(new Date(), "yyyy-MM-dd")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function ClientesView({ clientes }: { clientes: ClienteConStats[] }) {
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [busqueda, setBusqueda] = useState("");
@@ -91,15 +120,25 @@ export default function ClientesView({ clientes }: { clientes: ClienteConStats[]
               Clientes
             </h2>
           </div>
-          <div className="flex items-center gap-2 bg-surface-container border border-outline/15 px-3 py-2.5 w-48 md:w-64">
-            <Search size={13} className="text-outline shrink-0" />
-            <input
-              type="text"
-              placeholder="Buscar…"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="bg-transparent text-sm text-on-surface placeholder:text-outline focus:outline-none w-full"
-            />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-surface-container border border-outline/15 px-3 py-2.5 w-48 md:w-64">
+              <Search size={13} className="text-outline shrink-0" />
+              <input
+                type="text"
+                placeholder="Buscar…"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="bg-transparent text-sm text-on-surface placeholder:text-outline focus:outline-none w-full"
+              />
+            </div>
+            <button
+              onClick={() => exportarCSV(filtrados)}
+              title="Exportar CSV"
+              className="flex items-center gap-1.5 border border-outline/20 px-3 py-2.5 text-outline hover:text-primary hover:border-primary/40 transition-all font-label text-[10px] uppercase tracking-widest"
+            >
+              <Download size={13} />
+              <span className="hidden md:inline">CSV</span>
+            </button>
           </div>
         </div>
       </header>
