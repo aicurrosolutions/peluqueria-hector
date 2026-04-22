@@ -12,7 +12,7 @@ const COOKIE_NAME = "hl_admin_token";
 export async function signAdminToken() {
   return await new SignJWT({ role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("8h")
+    .setExpirationTime("365d")
     .sign(getSecret());
 }
 

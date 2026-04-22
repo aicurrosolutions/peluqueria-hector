@@ -6,16 +6,16 @@ import { BUSINESS, ADMIN } from "@/lib/config";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 
-// ─── Colores ───────────────────────────────────────────
+// ─── Colores (modo claro forzado) ──────────────────────
 const C = {
-  bg:       "#0D0D0D",
-  surface:  "#161616",
-  border:   "rgba(201,168,76,0.15)",
-  gold:     "#C9A84C",
-  goldDim:  "#755B00",
-  text:     "#F5F0EB",
-  muted:    "#888888",
-  faint:    "#444444",
+  bg:       "#FFFFFF",
+  surface:  "#F5F3EE",
+  border:   "rgba(0,0,0,0.10)",
+  gold:     "#A07830",
+  goldDim:  "#7A5C20",
+  text:     "#1A1A1A",
+  muted:    "#555555",
+  faint:    "#999999",
   error:    "#BA1A1A",
   success:  "#15803D",
 };
@@ -70,9 +70,24 @@ function wrap(contenido: string) {
   return `
     <!DOCTYPE html>
     <html lang="es">
-    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-    <body style="margin:0;padding:0;background:${C.bg};">
-      <div style="max-width:560px;margin:0 auto;padding:0 24px 48px;background:${C.bg};">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <!-- Fuerza modo claro en todos los clientes de correo que respetan esta meta -->
+      <meta name="color-scheme" content="light">
+      <meta name="supported-color-schemes" content="light">
+      <style>
+        /* Bloquea dark-mode automático en Apple Mail, Gmail, Outlook */
+        :root { color-scheme: light !important; }
+        * { color-scheme: light !important; }
+        @media (prefers-color-scheme: dark) {
+          body { background-color: ${C.bg} !important; color: ${C.text} !important; }
+          div  { background-color: ${C.bg} !important; }
+        }
+      </style>
+    </head>
+    <body style="margin:0;padding:0;background-color:${C.bg};color:${C.text};color-scheme:light;">
+      <div style="max-width:560px;margin:0 auto;padding:0 24px 48px;background-color:${C.bg};color-scheme:light;">
         ${contenido}
       </div>
     </body>

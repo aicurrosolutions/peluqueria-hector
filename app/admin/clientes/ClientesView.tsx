@@ -77,8 +77,13 @@ function exportarCSV(clientes: ClienteConStats[]) {
   const a = document.createElement("a");
   a.href = url;
   a.download = `clientes-${format(new Date(), "yyyy-MM-dd")}.csv`;
+  a.style.display = "none";
+  // Safari requiere que el <a> esté en el DOM para disparar la descarga
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  // Revocar DESPUÉS de que el browser tome el objeto URL
+  setTimeout(() => URL.revokeObjectURL(url), 150);
 }
 
 export default function ClientesView({ clientes }: { clientes: ClienteConStats[] }) {

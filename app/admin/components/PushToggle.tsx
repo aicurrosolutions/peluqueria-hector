@@ -5,12 +5,25 @@ import { Bell, BellOff } from "lucide-react";
 
 type Estado = "desconocido" | "activo" | "inactivo" | "denegado" | "no-soportado";
 
+/**
+ * Wrapper cross-browser para Notification.requestPermission.
+ * Safari ≤ 15.3 usa API de callback; Chrome/Firefox/Edge/Safari 15.4+ usa Promise.
+ * Esta función normaliza ambas variantes.
+ */
+function solicitarPermiso(): Promise<NotificationPermission> {
+  return new Promise((resolve) => {
+    const result = Notification.requestPermission((perm) => resolve(perm));
+    // Si devuelve una Promise (navegadores modernos), la usamos también
+    if (result instanceof Promise) result.then(resolve).catch(() => resolve("denied"));
+  });
+}
+
 export default function PushToggle() {
   const [estado, setEstado] = useState<Estado>("desconocido");
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       setEstado("no-soportado");
       return;
     }
@@ -18,16 +31,27 @@ export default function PushToggle() {
       setEstado("denegado");
       return;
     }
-    navigator.serviceWorker.ready.then(async (reg) => {
-      const sub = await reg.pushManager.getSubscription();
-      setEstado(sub ? "activo" : "inactivo");
-    });
+
+    // Registrar SW primero, luego comprobar suscripción activa.
+    // Evita la race condition de tener dos useEffects independientes.
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        // getSubscription sobre el registration recién registrado (o ya activo)
+        return reg.pushManager.getSubscription();
+      })
+      .then((sub) => {
+        setEstado(sub ? "activo" : "inactivo");
+      })
+      .catch(() => {
+        setEstado("no-soportado");
+      });
   }, []);
 
   const activar = async () => {
     setCargando(true);
     try {
-      const permiso = await Notification.requestPermission();
+      const permiso = await solicitarPermiso();
       if (permiso !== "granted") { setEstado("denegado"); return; }
 
       const keyRes = await fetch("/api/push/vapid-key");
@@ -74,13 +98,6 @@ export default function PushToggle() {
       setCargando(false);
     }
   };
-
-  // Registrar SW al montar
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    }
-  }, []);
 
   if (estado === "no-soportado") return null;
 
