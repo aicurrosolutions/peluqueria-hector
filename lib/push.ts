@@ -2,6 +2,7 @@ import webPush from "web-push";
 import { prisma } from "./prisma";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { BUSINESS } from "./config";
 
 function initVapid() {
   const pub = process.env.VAPID_PUBLIC_KEY;
@@ -27,6 +28,8 @@ export async function enviarPushNuevaCita(payload: {
   const notification = JSON.stringify({
     title: "Nueva cita reservada",
     body: `${payload.nombre} · ${payload.servicio} · ${fechaStr} ${payload.hora}`,
+    // URL absoluta: iOS y algunos Android ignoran iconos con ruta relativa
+    icon: `${BUSINESS.url}/logo.png`,
     url: "/admin/dashboard",
   });
 

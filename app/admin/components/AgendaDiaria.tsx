@@ -364,6 +364,7 @@ export default function AgendaDiaria({
         <PanelDetalle
           cita={citaActiva}
           servicios={servicios}
+          fechaISO={format(fecha, "yyyy-MM-dd")}
           onClose={() => setCitaActiva(null)}
           onActualizar={actualizarCita}
           onCancelar={cancelarCita}
@@ -378,12 +379,14 @@ export default function AgendaDiaria({
 function PanelDetalle({
   cita,
   servicios,
+  fechaISO,
   onClose,
   onActualizar,
   onCancelar,
 }: {
   cita: Cita;
   servicios: Servicio[];
+  fechaISO: string;
   onClose: () => void;
   onActualizar: (id: string, data: Record<string, unknown>) => Promise<void>;
   onCancelar: (id: string) => Promise<void>;
@@ -393,6 +396,8 @@ function PanelDetalle({
   const [notasEdit, setNotasEdit] = useState(cita.notas ?? "");
   const [servicioEdit, setServicioEdit] = useState(cita.servicio.id);
   const [guardando, setGuardando] = useState(false);
+  const [slots, setSlots] = useState<string[]>([]);
+  const [cargandoSlots, setCargandoSlots] = useState(false);
 
   // Sincronizar si la cita cambia desde fuera (ej: completar)
   useEffect(() => {
@@ -401,6 +406,31 @@ function PanelDetalle({
     setServicioEdit(cita.servicio.id);
     setEditando(false);
   }, [cita.id, cita.hora, cita.notas]);
+
+  // Cargar slots disponibles al entrar en modo edición o cambiar servicio
+  useEffect(() => {
+    if (!editando) { setSlots([]); return; }
+    // Usa el servicio seleccionado o cae al servicio original si la lista está vacía
+    const servicio = servicios.find((s) => s.id === servicioEdit) ?? cita.servicio;
+    const controller = new AbortController();
+    setCargandoSlots(true);
+    fetch(`/api/disponibilidad?fecha=${fechaISO}&duracion=${servicio.duracion}`, {
+      signal: controller.signal,
+    })
+      .then((r) => r.json())
+      .then((data: { slots: string[] }) => {
+        const disponibles = data.slots ?? [];
+        // La API excluye la hora de esta cita (la ve como ocupada por sí misma).
+        // La inyectamos siempre para que el admin pueda conservarla.
+        const conHoraOriginal = disponibles.includes(cita.hora)
+          ? disponibles
+          : [...disponibles, cita.hora].sort();
+        setSlots(conHoraOriginal);
+      })
+      .catch((e) => { if (e.name !== "AbortError") setSlots([cita.hora]); })
+      .finally(() => setCargandoSlots(false));
+    return () => controller.abort();
+  }, [editando, servicioEdit, fechaISO, servicios, cita.hora, cita.servicio]);
 
   const guardar = async () => {
     setGuardando(true);
@@ -476,14 +506,31 @@ function PanelDetalle({
           ) : (
             /* ── MODO EDITAR ── */
             <div className="space-y-4">
-              <EditField label="Hora">
-                <input
-                  type="time"
-                  value={horaEdit}
-                  step="1800"
-                  onChange={(e) => setHoraEdit(e.target.value)}
-                  className="w-full bg-surface-container border border-outline/20 text-on-surface px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
-                />
+              <EditField label={cargandoSlots ? "Hora — cargando…" : "Hora"}>
+                {cargandoSlots ? (
+                  <div className="h-9 bg-surface-container border border-outline/20 animate-pulse" />
+                ) : slots.length === 0 ? (
+                  <p className="text-xs text-outline/60 font-label px-1 py-2">No hay horas disponibles para este día</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                    {slots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setHoraEdit(slot)}
+                        className={`px-2.5 py-1.5 text-xs font-headline font-bold uppercase tracking-wider transition-all ${
+                          horaEdit === slot
+                            ? "bg-primary text-on-primary"
+                            : slot === cita.hora
+                            ? "bg-surface-container border border-outline/40 text-on-surface-variant hover:border-primary hover:text-primary"
+                            : "bg-surface-container border border-outline/20 text-on-surface hover:border-primary hover:text-primary"
+                        }`}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </EditField>
 
               {servicios.length > 0 && (
