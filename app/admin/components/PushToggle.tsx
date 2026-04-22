@@ -18,7 +18,7 @@ function solicitarPermiso(): Promise<NotificationPermission> {
   });
 }
 
-export default function PushToggle() {
+export default function PushToggle({ compact = false }: { compact?: boolean }) {
   const [estado, setEstado] = useState<Estado>("desconocido");
   const [cargando, setCargando] = useState(false);
 
@@ -105,6 +105,26 @@ export default function PushToggle() {
   const tooltip = estado === "denegado"
     ? "Notificaciones bloqueadas en el navegador"
     : activo ? "Desactivar notificaciones push" : "Activar notificaciones push";
+
+  // Modo compacto: solo ícono, para el header móvil
+  if (compact) {
+    return (
+      <button
+        onClick={activo ? desactivar : activar}
+        disabled={cargando || estado === "denegado" || estado === "desconocido"}
+        title={tooltip}
+        className={`p-2 transition-colors disabled:opacity-40 ${
+          activo
+            ? "text-primary"
+            : estado === "denegado"
+            ? "text-outline/30 cursor-not-allowed"
+            : "text-outline hover:text-on-surface"
+        }`}
+      >
+        {activo ? <Bell size={18} /> : <BellOff size={18} />}
+      </button>
+    );
+  }
 
   return (
     <button

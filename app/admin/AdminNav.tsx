@@ -101,6 +101,7 @@ export default function AdminNav() {
           <span className="font-headline font-black text-sm uppercase tracking-tighter text-on-surface">{BUSINESS.name}</span>
         </div>
         <div className="flex items-center gap-1">
+          <PushToggle compact />
           {/* Ajustes — acceso a Perfil desde móvil */}
           <Link
             href="/admin/perfil"
