@@ -7,6 +7,7 @@ import { LayoutDashboard, Scissors, BarChart2, LogOut, Clock, UserCog, Users, Be
 import { cn } from "@/lib/utils";
 import { BUSINESS } from "@/lib/config";
 import PushToggle from "./components/PushToggle";
+import NotifBell from "./components/NotifBell";
 
 // Bottom nav móvil — 5 ítems fijos, sin espacio para más
 const NAV_BOTTOM = [
@@ -106,18 +107,8 @@ export default function AdminNav() {
           <span className="font-headline font-black text-sm uppercase tracking-tighter text-on-surface">{BUSINESS.name}</span>
         </div>
         <div className="flex items-center gap-1">
-          <PushToggle compact />
-          {/* Notificaciones — acceso desde móvil vía header (bottom nav sin espacio) */}
-          <Link
-            href="/admin/notificaciones"
-            className={cn(
-              "p-2 transition-colors",
-              pathname === "/admin/notificaciones" ? "text-primary" : "text-outline hover:text-on-surface"
-            )}
-            title="Notificaciones"
-          >
-            <Bell size={18} />
-          </Link>
+          {/* Campana única: navega a notificaciones + badge de no-leídas */}
+          <NotifBell />
           <Link
             href="/admin/perfil"
             className={cn(
