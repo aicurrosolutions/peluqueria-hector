@@ -53,38 +53,36 @@ export default function ActividadReciente() {
 
   useEffect(() => {
     cargar();
-    // Refresca automáticamente cada 60 s
     const interval = setInterval(() => cargar(true), 60_000);
     return () => clearInterval(interval);
   }, [cargar]);
 
   return (
-    <section>
-      {/* Cabecera */}
-      <div className="flex items-center gap-3 mb-4">
-        <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-outline font-label">
-          Actividad reciente
-        </h3>
-        <div className="h-px flex-1 bg-outline/10" />
+    <div>
+      {/* Barra de control */}
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-[10px] text-outline font-label uppercase tracking-widest">
+          Últimas 25 acciones · actualiza cada 60 s
+        </p>
         <button
           onClick={() => cargar(true)}
           disabled={actualizando}
-          title="Actualizar"
-          className="p-1 text-outline/50 hover:text-outline transition-colors disabled:opacity-30"
+          title="Actualizar ahora"
+          className="flex items-center gap-1.5 text-[10px] text-outline hover:text-on-surface font-label uppercase tracking-widest transition-colors disabled:opacity-30"
         >
           <RefreshCw size={11} className={actualizando ? "animate-spin" : ""} />
+          Actualizar
         </button>
       </div>
 
-      {/* Estados */}
       {cargando ? (
         <div className="space-y-px">
-          {[...Array(5)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div key={i} className="h-[60px] bg-surface-container animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="bg-surface-container-low px-6 py-10 text-center">
+        <div className="bg-surface-container-low px-6 py-16 text-center">
           <p className="text-outline text-xs font-label uppercase tracking-widest">
             Sin actividad reciente
           </p>
@@ -94,7 +92,7 @@ export default function ActividadReciente() {
           {items.map((item) => {
             const cfg = CONFIG[item.tipo];
             const Icon = cfg.icon;
-            const fechaCita = format(parseISO(item.fecha), "d MMM", { locale: es });
+            const fechaCita = format(parseISO(item.fecha), "d MMM yyyy", { locale: es });
             const hace = formatDistanceToNow(parseISO(item.timestamp), {
               locale: es,
               addSuffix: true,
@@ -103,11 +101,11 @@ export default function ActividadReciente() {
             return (
               <div
                 key={item.id}
-                className="bg-surface-container-low hover:bg-surface-container transition-colors px-4 py-3 flex items-center gap-3"
+                className="bg-surface-container-low hover:bg-surface-container transition-colors px-4 md:px-6 py-4 flex items-center gap-4"
               >
                 {/* Icono */}
-                <div className={`w-7 h-7 shrink-0 flex items-center justify-center ${cfg.bgColor}`}>
-                  <Icon size={13} className={cfg.textColor} />
+                <div className={`w-8 h-8 shrink-0 flex items-center justify-center ${cfg.bgColor}`}>
+                  <Icon size={14} className={cfg.textColor} />
                 </div>
 
                 {/* Info */}
@@ -124,13 +122,13 @@ export default function ActividadReciente() {
                   </div>
                   <p className="text-[10px] text-outline font-label truncate mt-0.5">
                     {item.servicio}
-                    <span className="text-outline/40 mx-1">·</span>
-                    {fechaCita} {item.hora}
+                    <span className="text-outline/40 mx-1.5">·</span>
+                    {fechaCita} · {item.hora}
                   </p>
                 </div>
 
-                {/* Timestamp relativo */}
-                <p className="text-[9px] text-outline/50 font-label shrink-0 text-right whitespace-nowrap">
+                {/* Timestamp */}
+                <p className="text-[9px] text-outline/50 font-label shrink-0 text-right whitespace-nowrap hidden sm:block">
                   {hace}
                 </p>
               </div>
@@ -138,6 +136,6 @@ export default function ActividadReciente() {
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 }

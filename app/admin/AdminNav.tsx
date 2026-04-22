@@ -3,19 +3,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Scissors, BarChart2, LogOut, Clock, UserCog, Users } from "lucide-react";
+import { LayoutDashboard, Scissors, BarChart2, LogOut, Clock, UserCog, Users, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BUSINESS } from "@/lib/config";
 import PushToggle from "./components/PushToggle";
 
-// 4 items en bottom nav móvil — holgado y legible
-// Calendario se unificó con Estadísticas
-const NAV = [
+// Bottom nav móvil — 5 ítems fijos, sin espacio para más
+const NAV_BOTTOM = [
   { href: "/admin/dashboard",    label: "Agenda",    icon: LayoutDashboard },
   { href: "/admin/clientes",     label: "Clientes",  icon: Users },
   { href: "/admin/servicios",    label: "Servicios", icon: Scissors },
   { href: "/admin/horario",      label: "Horario",   icon: Clock },
   { href: "/admin/estadisticas", label: "Informes",  icon: BarChart2 },
+];
+
+// Sidebar desktop — incluye Notificaciones (no cabe en bottom nav)
+const NAV_SIDEBAR = [
+  ...NAV_BOTTOM,
+  { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell },
 ];
 
 export default function AdminNav() {
@@ -44,7 +49,7 @@ export default function AdminNav() {
 
         {/* Nav */}
         <nav className="flex-1 px-4 space-y-1 mt-6 overflow-y-auto">
-          {NAV.map(({ href, label, icon: Icon }) => (
+          {NAV_SIDEBAR.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -102,7 +107,17 @@ export default function AdminNav() {
         </div>
         <div className="flex items-center gap-1">
           <PushToggle compact />
-          {/* Ajustes — acceso a Perfil desde móvil */}
+          {/* Notificaciones — acceso desde móvil vía header (bottom nav sin espacio) */}
+          <Link
+            href="/admin/notificaciones"
+            className={cn(
+              "p-2 transition-colors",
+              pathname === "/admin/notificaciones" ? "text-primary" : "text-outline hover:text-on-surface"
+            )}
+            title="Notificaciones"
+          >
+            <Bell size={18} />
+          </Link>
           <Link
             href="/admin/perfil"
             className={cn(
@@ -123,9 +138,9 @@ export default function AdminNav() {
         </div>
       </header>
 
-      {/* ── BOTTOM NAV MÓVIL — 5 items, espacio suficiente ── */}
+      {/* ── BOTTOM NAV MÓVIL — 5 items fijos, sin Notificaciones (header) ── */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-container border-t border-outline/15 flex">
-        {NAV.map(({ href, label, icon: Icon }) => (
+        {NAV_BOTTOM.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
             href={href}
