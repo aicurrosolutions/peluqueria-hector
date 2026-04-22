@@ -392,6 +392,7 @@ function PanelDetalle({
   onCancelar: (id: string) => Promise<void>;
 }) {
   const [editando, setEditando] = useState(false);
+  const [fechaEdit, setFechaEdit] = useState(fechaISO);
   const [horaEdit, setHoraEdit] = useState(cita.hora);
   const [notasEdit, setNotasEdit] = useState(cita.notas ?? "");
   const [servicioEdit, setServicioEdit] = useState(cita.servicio.id);
@@ -401,41 +402,44 @@ function PanelDetalle({
 
   // Sincronizar si la cita cambia desde fuera (ej: completar)
   useEffect(() => {
+    setFechaEdit(fechaISO);
     setHoraEdit(cita.hora);
     setNotasEdit(cita.notas ?? "");
     setServicioEdit(cita.servicio.id);
     setEditando(false);
-  }, [cita.id, cita.hora, cita.notas]);
+  }, [cita.id, cita.hora, cita.notas, fechaISO]);
 
-  // Cargar slots disponibles al entrar en modo edición o cambiar servicio
+  // Cargar slots disponibles al entrar en modo edición, cambiar servicio o cambiar fecha
   useEffect(() => {
     if (!editando) { setSlots([]); return; }
-    // Usa el servicio seleccionado o cae al servicio original si la lista está vacía
     const servicio = servicios.find((s) => s.id === servicioEdit) ?? cita.servicio;
     const controller = new AbortController();
     setCargandoSlots(true);
-    fetch(`/api/disponibilidad?fecha=${fechaISO}&duracion=${servicio.duracion}`, {
+    fetch(`/api/disponibilidad?fecha=${fechaEdit}&duracion=${servicio.duracion}`, {
       signal: controller.signal,
     })
       .then((r) => r.json())
       .then((data: { slots: string[] }) => {
         const disponibles = data.slots ?? [];
-        // La API excluye la hora de esta cita (la ve como ocupada por sí misma).
-        // La inyectamos siempre para que el admin pueda conservarla.
-        const conHoraOriginal = disponibles.includes(cita.hora)
-          ? disponibles
-          : [...disponibles, cita.hora].sort();
+        // Solo inyectamos la hora original si la fecha no cambió —
+        // si cambió, la cita no ocupa nada en el nuevo día.
+        const esLaMismaFecha = fechaEdit === fechaISO;
+        const conHoraOriginal =
+          esLaMismaFecha && !disponibles.includes(cita.hora)
+            ? [...disponibles, cita.hora].sort()
+            : disponibles;
         setSlots(conHoraOriginal);
       })
-      .catch((e) => { if (e.name !== "AbortError") setSlots([cita.hora]); })
+      .catch((e) => { if (e.name !== "AbortError") setSlots(fechaEdit === fechaISO ? [cita.hora] : []); })
       .finally(() => setCargandoSlots(false));
     return () => controller.abort();
-  }, [editando, servicioEdit, fechaISO, servicios, cita.hora, cita.servicio]);
+  }, [editando, servicioEdit, fechaEdit, fechaISO, servicios, cita.hora, cita.servicio]);
 
   const guardar = async () => {
     setGuardando(true);
     await onActualizar(cita.id, {
       hora: horaEdit,
+      fecha: fechaEdit,
       notas: notasEdit || null,
       servicioId: servicioEdit !== cita.servicio.id ? servicioEdit : undefined,
     });
@@ -489,7 +493,7 @@ function PanelDetalle({
             /* ── MODO VER ── */
             <>
               <InfoRow label="Servicio" value={`${cita.servicio.nombre} · ${cita.servicio.precio}€ · ${cita.servicio.duracion} min`} />
-              <InfoRow label="Hora" value={cita.hora} />
+              <InfoRow label="Fecha · Hora" value={`${format(parseISO(fechaISO), "d MMM yyyy", { locale: es })} · ${cita.hora}`} />
               <div>
                 <p className="text-[9px] uppercase tracking-widest text-on-surface-variant font-label mb-1">Teléfono</p>
                 <a
@@ -506,6 +510,15 @@ function PanelDetalle({
           ) : (
             /* ── MODO EDITAR ── */
             <div className="space-y-4">
+              <EditField label="Fecha">
+                <input
+                  type="date"
+                  value={fechaEdit}
+                  onChange={(e) => { setFechaEdit(e.target.value); setHoraEdit(""); }}
+                  className="w-full bg-surface-container border border-outline/20 text-on-surface px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
+                />
+              </EditField>
+
               <EditField label={cargandoSlots ? "Hora — cargando…" : "Hora"}>
                 {cargandoSlots ? (
                   <div className="h-9 bg-surface-container border border-outline/20 animate-pulse" />

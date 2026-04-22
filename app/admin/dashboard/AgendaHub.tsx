@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import VistaSemanal from "./VistaSemanal";
 import AgendaDiaria from "../components/AgendaDiaria";
 import NuevaCitaForm from "../citas/NuevaCitaForm";
+import ActividadReciente from "./ActividadReciente";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -286,6 +287,8 @@ export default function AgendaHub({
             onCitasActualizadas={onCitasActualizadas}
           />
         </section>
+
+        <ActividadReciente />
       </div>
 
       {/* ── Modal nueva cita ──────────────────────────────────────────────── */}
