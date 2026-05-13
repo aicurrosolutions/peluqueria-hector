@@ -23,9 +23,9 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DIRECT_URL }}
         run: |
-          # Extraer componentes de la URL de conexión
-          # Formato esperado: postgresql://user:pass@host:port/dbname
-          pg_dump "$DATABASE_URL" \
+          DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:/]+).*|\1|')
+          DB_IPv4=$(dig +short A "$DB_HOST" | grep -E '^[0-9]+\.' | tail -1)
+          PGHOSTADDR="$DB_IPv4" pg_dump "$DATABASE_URL" \
             --format=custom \
             --no-acl \
             --no-owner \
