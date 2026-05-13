@@ -21,7 +21,7 @@ jobs:
 
       - name: Ejecutar pg_dump
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DIRECT_URL }}
         run: |
           # Extraer componentes de la URL de conexión
           # Formato esperado: postgresql://user:pass@host:port/dbname
