@@ -24,7 +24,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DIRECT_URL }}
         run: |
           DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:/]+).*|\1|')
-          DB_IPv4=$(dig +short A "$DB_HOST" | grep -E '^[0-9]+\.' | tail -1)
+          DB_IPv4=$(getent ahostsv4 "$DB_HOST" | awk 'NR==1{print $1}')
+          echo "Conectando via IPv4: $DB_IPv4"
           PGHOSTADDR="$DB_IPv4" pg_dump "$DATABASE_URL" \
             --format=custom \
             --no-acl \
