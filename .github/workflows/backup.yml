@@ -28,6 +28,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.POOLER_URL }}
         run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
           pg_dump "$DATABASE_URL" \
             --format=custom \
             --no-acl \
