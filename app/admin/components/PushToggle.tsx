@@ -23,12 +23,11 @@ function esStandalone(): boolean {
   );
 }
 
-// Retorna Uint8Array en lugar de ArrayBuffer — más compatible con iOS Safari
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
-  const view = new Uint8Array(rawData.length);
+  const view = new Uint8Array(new ArrayBuffer(rawData.length));
   for (let i = 0; i < rawData.length; i++) view[i] = rawData.charCodeAt(i);
   return view;
 }
