@@ -3,6 +3,7 @@ import { getAdminSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import ActividadReciente from "./ActividadReciente";
 import PushToggle from "@/app/admin/components/PushToggle";
+import PushTestButton from "./PushTestButton";
 
 export const metadata: Metadata = { title: "Notificaciones — Héctor Lacorte" };
 
@@ -29,7 +30,8 @@ export default async function NotificacionesPage() {
         </div>
       </header>
 
-      <div className="px-4 md:px-10 py-6 md:py-8">
+      <div className="px-4 md:px-10 py-6 md:py-8 space-y-8">
+        <PushTestButton />
         <ActividadReciente />
       </div>
     </div>

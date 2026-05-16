@@ -13,6 +13,45 @@ function initVapid() {
   return true;
 }
 
+export async function enviarPushTest(): Promise<{ enviadas: number; total: number } | null> {
+  if (!initVapid()) return null;
+
+  const subs = await prisma.pushSuscripcion.findMany().catch(() => []);
+
+  const notification = JSON.stringify({
+    title: "Notificación de prueba",
+    body: "Las push notifications están funcionando correctamente.",
+    icon: `${BUSINESS.url}/logo.png`,
+    url: "/admin/dashboard",
+  });
+
+  let enviadas = 0;
+  await Promise.allSettled(
+    subs.map(async (sub) => {
+      try {
+        await webPush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          notification
+        );
+        enviadas++;
+      } catch (err: unknown) {
+        if (
+          err &&
+          typeof err === "object" &&
+          "statusCode" in err &&
+          (err.statusCode === 410 || err.statusCode === 404)
+        ) {
+          await prisma.pushSuscripcion
+            .delete({ where: { endpoint: sub.endpoint } })
+            .catch(() => {});
+        }
+      }
+    })
+  );
+
+  return { enviadas, total: subs.length };
+}
+
 export async function enviarPushNuevaCita(payload: {
   nombre: string;
   servicio: string;
