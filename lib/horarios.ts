@@ -1,4 +1,4 @@
-import { format, addMinutes, parse, isAfter, isBefore } from "date-fns";
+import { format, addMinutes, parse, isBefore } from "date-fns";
 
 export function timeToMinutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
@@ -28,9 +28,7 @@ export function generarSlots(duracionMinutos: number, franjas: FranjaHoraria[]):
   for (const franja of franjas) {
     let actual = parse(franja.inicio, "HH:mm", base);
     const limite = parse(franja.fin, "HH:mm", base);
-    while (isBefore(actual, limite) || actual.getTime() === limite.getTime()) {
-      const siguiente = addMinutes(actual, duracionMinutos);
-      if (isAfter(siguiente, limite) && siguiente.getTime() !== limite.getTime()) break;
+    while (isBefore(actual, limite)) {
       slots.push(format(actual, "HH:mm"));
       actual = addMinutes(actual, 30);
     }
@@ -53,18 +51,19 @@ export function formatearFranjas(franjas: FranjaHoraria[]): string {
 
 export const DIAS_SEMANA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-// Detecta si un slot (inicio + duracion) solapa con alguna cita existente.
-// Usa comparación de intervalos abiertos: [inicio, fin) vs [inicio, fin)
+// Detecta si un slot solapa con alguna cita existente.
+// Todas las citas se tratan como ventanas de 30 min, independientemente de la duración real.
+// Esto permite reservar cada 30 min aunque un servicio tarde más.
 export function hayConflicto(
   slotHora: string,
   slotDuracion: number,
   citasExistentes: { hora: string; duracion: number }[]
 ): boolean {
   const slotInicio = timeToMinutes(slotHora);
-  const slotFin    = slotInicio + slotDuracion;
-  return citasExistentes.some(({ hora, duracion }) => {
+  const slotFin    = slotInicio + 30;
+  return citasExistentes.some(({ hora }) => {
     const citaInicio = timeToMinutes(hora);
-    const citaFin    = citaInicio + duracion;
+    const citaFin    = citaInicio + 30;
     return citaInicio < slotFin && citaFin > slotInicio;
   });
 }

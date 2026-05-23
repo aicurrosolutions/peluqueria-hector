@@ -30,7 +30,8 @@ export default function NuevaCitaForm({
   onCreada?: () => void;
 }) {
   const [servicioId, setServicioId] = useState(servicios[0]?.id ?? "");
-  const [fecha, setFecha] = useState(fechaDefault);
+  const [fecha, setFecha] = useState(fechaDefault); // YYYY-MM-DD — enviado a la API
+  const [fechaDisplay, setFechaDisplay] = useState(() => isoToDMY(fechaDefault)); // DD/MM/AAAA — visible
   const [hora, setHora] = useState(horaDefault);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -209,10 +210,16 @@ export default function NuevaCitaForm({
       {/* FECHA */}
       <Field label="Fecha">
         <input
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          className="w-full bg-surface-container border border-outline/20 text-on-surface px-3 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
+          type="text"
+          value={fechaDisplay}
+          placeholder="DD/MM/AAAA"
+          maxLength={10}
+          onChange={(e) => {
+            setFechaDisplay(e.target.value);
+            const iso = dmyToISO(e.target.value);
+            if (iso) setFecha(iso);
+          }}
+          className="w-full bg-surface-container border border-outline/20 text-on-surface placeholder-outline/40 px-3 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
         />
       </Field>
 
@@ -328,6 +335,20 @@ export default function NuevaCitaForm({
       </div>
     </form>
   );
+}
+
+// ── Helpers de fecha ─────────────────────────────────────────────────────────
+
+function isoToDMY(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function dmyToISO(dmy: string): string {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dmy)) return "";
+  const [d, m, y] = dmy.split("/");
+  return `${y}-${m}-${d}`;
 }
 
 // ── Subcomponentes ────────────────────────────────────────────────────────────

@@ -38,7 +38,8 @@ export default function PanelDetalle({
   onCancelar,
 }: Props) {
   const [editando, setEditando] = useState(false);
-  const [fechaEdit, setFechaEdit] = useState(fechaISO);
+  const [fechaEdit, setFechaEdit] = useState(fechaISO); // YYYY-MM-DD — enviado a la API
+  const [fechaEditDisplay, setFechaEditDisplay] = useState(() => isoToDMY(fechaISO)); // DD/MM/AAAA
   const [horaEdit, setHoraEdit] = useState(cita.hora);
   const [notasEdit, setNotasEdit] = useState(cita.notas ?? "");
   const [servicioEdit, setServicioEdit] = useState(cita.servicio.id);
@@ -49,6 +50,7 @@ export default function PanelDetalle({
   // Sincronizar si la cita cambia desde fuera (ej: completar)
   useEffect(() => {
     setFechaEdit(fechaISO);
+    setFechaEditDisplay(isoToDMY(fechaISO));
     setHoraEdit(cita.hora);
     setNotasEdit(cita.notas ?? "");
     setServicioEdit(cita.servicio.id);
@@ -158,10 +160,16 @@ export default function PanelDetalle({
             <div className="space-y-4">
               <EditField label="Fecha">
                 <input
-                  type="date"
-                  value={fechaEdit}
-                  onChange={(e) => { setFechaEdit(e.target.value); setHoraEdit(""); }}
-                  className="w-full bg-surface-container border border-outline/20 text-on-surface px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
+                  type="text"
+                  value={fechaEditDisplay}
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                  onChange={(e) => {
+                    setFechaEditDisplay(e.target.value);
+                    const iso = dmyToISO(e.target.value);
+                    if (iso) { setFechaEdit(iso); setHoraEdit(""); }
+                  }}
+                  className="w-full bg-surface-container border border-outline/20 text-on-surface placeholder-outline/40 px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors"
                 />
               </EditField>
 
@@ -272,6 +280,20 @@ export default function PanelDetalle({
       </div>
     </>
   );
+}
+
+// ── Helpers de fecha ─────────────────────────────────────────────────────────
+
+function isoToDMY(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function dmyToISO(dmy: string): string {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dmy)) return "";
+  const [d, m, y] = dmy.split("/");
+  return `${y}-${m}-${d}`;
 }
 
 // ── Subcomponentes ────────────────────────────────────────────────────────────

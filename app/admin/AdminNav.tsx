@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Scissors, BarChart2, LogOut, Clock, UserCog, Users, Bell } from "lucide-react";
+import { LayoutDashboard, Scissors, BarChart2, LogOut, Clock, UserCog, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BUSINESS } from "@/lib/config";
 import PushToggle from "./components/PushToggle";
@@ -18,11 +18,8 @@ const NAV_BOTTOM = [
   { href: "/admin/estadisticas", label: "Informes",  icon: BarChart2 },
 ];
 
-// Sidebar desktop — incluye Notificaciones (no cabe en bottom nav)
-const NAV_SIDEBAR = [
-  ...NAV_BOTTOM,
-  { href: "/admin/notificaciones", label: "Notificaciones", icon: Bell },
-];
+// Sidebar desktop — Notificaciones se renderiza aparte con badge via NotifBell
+const NAV_SIDEBAR = [...NAV_BOTTOM];
 
 export default function AdminNav() {
   const pathname = usePathname();
@@ -65,6 +62,8 @@ export default function AdminNav() {
               {label}
             </Link>
           ))}
+          {/* Notificaciones con badge de no-leídas */}
+          <NotifBell variant="sidebar" />
         </nav>
 
         {/* Acciones de cuenta */}
