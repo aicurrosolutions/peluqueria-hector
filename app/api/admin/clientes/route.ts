@@ -1,7 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
-import { differenceInDays, subDays } from "date-fns";
+import { differenceInDays } from "date-fns";
+
+export async function POST(req: Request) {
+  const session = await getAdminSession();
+  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const body = await req.json();
+  const nombre = (body.nombre ?? "").trim();
+  const telefono = (body.telefono ?? "").trim();
+  const email = (body.email ?? "").trim() || null;
+  const notas = (body.notas ?? "").trim() || null;
+
+  if (!nombre || !telefono) {
+    return NextResponse.json({ error: "Nombre y teléfono son obligatorios" }, { status: 400 });
+  }
+
+  const existente = await prisma.cliente.findUnique({ where: { telefono } });
+  if (existente) {
+    return NextResponse.json({ error: "Ya existe un cliente con ese teléfono" }, { status: 409 });
+  }
+
+  const cliente = await prisma.cliente.create({ data: { nombre, telefono, email, notas } });
+  return NextResponse.json(cliente, { status: 201 });
+}
 
 export async function GET() {
   const session = await getAdminSession();

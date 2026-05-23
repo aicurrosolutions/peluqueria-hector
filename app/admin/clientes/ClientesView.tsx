@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { Users, Star, TrendingDown, AlertTriangle, Moon, Sparkles, Search, Download } from "lucide-react";
+import { Users, Star, TrendingDown, AlertTriangle, Moon, Sparkles, Search, Download, UserPlus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { ClienteConStats } from "./page";
 
 type Categoria = ClienteConStats["categoria"];
@@ -86,9 +87,148 @@ function exportarCSV(clientes: ClienteConStats[]) {
   setTimeout(() => URL.revokeObjectURL(url), 150);
 }
 
+function NuevoClienteModal({ onClose, onCreado }: { onClose: () => void; onCreado: () => void }) {
+  const [form, setForm] = useState({ nombre: "", telefono: "", email: "", notas: "" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        setError(d.error ?? "Error al crear el cliente");
+        return;
+      }
+      onCreado();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div
+        className="bg-surface w-full max-w-md mx-4 border border-outline/20 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header modal */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-outline/10">
+          <div>
+            <span className="text-primary text-[10px] font-bold tracking-[0.4em] uppercase font-label block mb-0.5">
+              Nuevo cliente
+            </span>
+            <h3 className="text-lg font-headline font-bold uppercase tracking-tight text-on-surface">
+              Añadir manualmente
+            </h3>
+          </div>
+          <button onClick={onClose} className="text-outline hover:text-on-surface transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Formulario */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <Field
+            label="Nombre *"
+            value={form.nombre}
+            onChange={(v) => setForm((f) => ({ ...f, nombre: v }))}
+            placeholder="Nombre completo"
+            required
+          />
+          <Field
+            label="Teléfono *"
+            value={form.telefono}
+            onChange={(v) => setForm((f) => ({ ...f, telefono: v }))}
+            placeholder="612 345 678"
+            type="tel"
+            required
+          />
+          <Field
+            label="Email"
+            value={form.email}
+            onChange={(v) => setForm((f) => ({ ...f, email: v }))}
+            placeholder="correo@ejemplo.com"
+            type="email"
+          />
+          <Field
+            label="Notas"
+            value={form.notas}
+            onChange={(v) => setForm((f) => ({ ...f, notas: v }))}
+            placeholder="Alergias, preferencias…"
+            multiline
+          />
+
+          {error && (
+            <p className="text-error text-xs font-label bg-error/10 px-3 py-2">{error}</p>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 border border-outline/20 py-2.5 text-[11px] font-label uppercase tracking-widest text-outline hover:text-on-surface transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-primary text-on-primary py-2.5 text-[11px] font-label uppercase tracking-widest font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {loading ? "Guardando…" : "Guardar cliente"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label, value, onChange, placeholder, type = "text", required, multiline,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; type?: string; required?: boolean; multiline?: boolean;
+}) {
+  const base = "w-full bg-surface-container border border-outline/15 px-3 py-2.5 text-sm text-on-surface placeholder:text-outline/50 focus:outline-none focus:border-primary/60";
+  return (
+    <div>
+      <label className="block text-[10px] font-label uppercase tracking-widest text-outline mb-1.5">{label}</label>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={3}
+          className={base + " resize-none"}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          required={required}
+          className={base}
+        />
+      )}
+    </div>
+  );
+}
+
 export default function ClientesView({ clientes }: { clientes: ClienteConStats[] }) {
+  const router = useRouter();
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [busqueda, setBusqueda] = useState("");
+  const [modalAbierto, setModalAbierto] = useState(false);
 
   const conteos = useMemo(() => {
     const r: Record<string, number> = { todos: clientes.length };
@@ -112,8 +252,17 @@ export default function ClientesView({ clientes }: { clientes: ClienteConStats[]
     return lista.sort((a, b) => (b.gastoTotal ?? 0) - (a.gastoTotal ?? 0));
   }, [clientes, filtro, busqueda]);
 
+  function handleCreado() {
+    setModalAbierto(false);
+    router.refresh();
+  }
+
   return (
     <div className="bg-surface min-h-screen">
+      {modalAbierto && (
+        <NuevoClienteModal onClose={() => setModalAbierto(false)} onCreado={handleCreado} />
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-30 bg-surface px-4 md:px-10 py-5 md:py-8 border-b border-outline/5">
         <div className="flex items-center justify-between gap-4">
@@ -136,6 +285,14 @@ export default function ClientesView({ clientes }: { clientes: ClienteConStats[]
                 className="bg-transparent text-sm text-on-surface placeholder:text-outline focus:outline-none w-full"
               />
             </div>
+            <button
+              onClick={() => setModalAbierto(true)}
+              title="Añadir cliente"
+              className="flex items-center gap-1.5 bg-primary text-on-primary px-3 py-2.5 hover:bg-primary/90 transition-colors font-label text-[10px] uppercase tracking-widest font-bold"
+            >
+              <UserPlus size={13} />
+              <span className="hidden md:inline">Nuevo</span>
+            </button>
             <button
               onClick={() => exportarCSV(filtrados)}
               title="Exportar CSV"
