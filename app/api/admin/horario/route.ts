@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/auth";
 import { HORARIO_DEFAULT, DIAS_SEMANA } from "@/lib/horarios";
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
     entidad: "HorarioFranja",
     datos: { diaSemana, nombreDia: DIAS_SEMANA[diaSemana], franjas },
   });
+
+  revalidatePath("/");
 
   return NextResponse.json({ ok: true });
 }

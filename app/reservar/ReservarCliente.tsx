@@ -341,7 +341,7 @@ export default function ReservarCliente() {
                 </div>
                 <form className="space-y-10 max-w-xl" onSubmit={(e) => { e.preventDefault(); handleConfirmar(); }}>
                   <FloatInput label="Nombre Completo *" value={nombre} onChange={setNombre} placeholder="EJ. JUAN GARCÍA" />
-                  <FloatInput label="WhatsApp / Teléfono *" value={telefono} onChange={setTelefono} placeholder="+34 600 000 000" type="tel" />
+                  <FloatInput label="WhatsApp / Teléfono *" value={telefono} onChange={setTelefono} placeholder="600 000 000" type="tel" />
                   <FloatInput label="Email *" value={email} onChange={setEmail} placeholder="para recibir la confirmación" type="email" required />
 
                   {/* Checkbox privacidad */}

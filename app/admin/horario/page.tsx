@@ -51,6 +51,22 @@ export default function HorarioPage() {
     );
   };
 
+  const normalizarHora = (diaSemana: number, idx: number, campo: "inicio" | "fin", val: string) => {
+    let h: number, m: number;
+    if (/^\d{4}$/.test(val)) {
+      h = parseInt(val.slice(0, 2));
+      m = parseInt(val.slice(2));
+    } else {
+      const match = val.match(/^(\d{1,2}):(\d{1,2})$/);
+      if (!match) return;
+      h = parseInt(match[1]);
+      m = parseInt(match[2]);
+    }
+    if (h > 23 || m > 59) return;
+    updateFranja(diaSemana, idx, campo,
+      `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+  };
+
   const guardarDia = async (dia: Dia) => {
     setGuardando(dia.diaSemana);
     setError(null);
@@ -153,18 +169,32 @@ export default function HorarioPage() {
                         <div className="flex items-center gap-2 md:gap-3 flex-1">
                           <label className="text-[10px] uppercase tracking-widest text-outline font-label w-10 md:w-12 shrink-0">Desde</label>
                           <input
-                            type="time"
+                            type="text"
                             value={franja.inicio}
-                            onChange={(e) => updateFranja(dia.diaSemana, idx, "inicio", e.target.value)}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^0-9:]/g, "").slice(0, 5);
+                              updateFranja(dia.diaSemana, idx, "inicio", raw);
+                            }}
+                            onBlur={(e) => normalizarHora(dia.diaSemana, idx, "inicio", e.target.value)}
+                            placeholder="HH:MM"
+                            maxLength={5}
+                            inputMode="numeric"
                             className="bg-surface-container-high border-0 border-b border-outline focus:border-primary px-2 md:px-3 py-2 font-headline text-sm text-on-surface outline-none transition-all w-full max-w-[120px]"
                           />
                         </div>
                         <div className="flex items-center gap-2 md:gap-3 flex-1">
                           <label className="text-[10px] uppercase tracking-widest text-outline font-label w-10 md:w-12 shrink-0">Hasta</label>
                           <input
-                            type="time"
+                            type="text"
                             value={franja.fin}
-                            onChange={(e) => updateFranja(dia.diaSemana, idx, "fin", e.target.value)}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/[^0-9:]/g, "").slice(0, 5);
+                              updateFranja(dia.diaSemana, idx, "fin", raw);
+                            }}
+                            onBlur={(e) => normalizarHora(dia.diaSemana, idx, "fin", e.target.value)}
+                            placeholder="HH:MM"
+                            maxLength={5}
+                            inputMode="numeric"
                             className="bg-surface-container-high border-0 border-b border-outline focus:border-primary px-2 md:px-3 py-2 font-headline text-sm text-on-surface outline-none transition-all w-full max-w-[120px]"
                           />
                         </div>

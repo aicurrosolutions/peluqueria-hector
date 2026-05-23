@@ -3,9 +3,15 @@ import { signAdminToken, COOKIE_NAME } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, hashPassword } from "@/lib/crypto";
 import { logger } from "@/lib/logger";
+import { rlLogin, getIP, rateLimitResponse } from "@/lib/ratelimit";
 
 export async function POST(req: NextRequest) {
   try {
+    if (rlLogin) {
+      const { success, reset } = await rlLogin.limit(getIP(req));
+      if (!success) return rateLimitResponse(reset);
+    }
+
     const { username, password } = await req.json();
 
     const validUser = process.env.ADMIN_USERNAME ?? "hector";

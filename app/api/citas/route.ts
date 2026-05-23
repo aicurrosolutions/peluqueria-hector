@@ -7,6 +7,7 @@ import { enviarPushNuevaCita } from "@/lib/push";
 import { logger } from "@/lib/logger";
 import { timeToMinutes } from "@/lib/horarios";
 import { z } from "zod";
+import { rlCitas, getIP, rateLimitResponse } from "@/lib/ratelimit";
 
 const CitaPostSchema = z.object({
   servicioId: z.string().min(1),
@@ -59,6 +60,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // El admin no está sujeto al rate limit de IP
+    const session = await getAdminSession();
+    if (!session && rlCitas) {
+      const { success, reset } = await rlCitas.limit(getIP(req));
+      if (!success) return rateLimitResponse(reset);
+    }
+
     const body = await req.json();
     const parsed = CitaPostSchema.safeParse(body);
 
@@ -74,7 +82,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const session = await getAdminSession();
     const { servicioId, fecha, hora, nombre, telefono, email } = parsed.data;
     const emailVal = email || undefined;
 

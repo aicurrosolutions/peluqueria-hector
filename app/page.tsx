@@ -1,13 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { BUSINESS, SOBRE_MI } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { formatearFranjas, DIAS_SEMANA } from "@/lib/horarios";
+
+export const dynamic = "force-dynamic";
 
 // Orden de visualización del horario: Lun → Sáb → Dom
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
 
 export default async function Home() {
+  await headers(); // Garantiza renderizado dinámico por petición (sin caché)
+
   // Servicios y horario desde BD — si falla, usa arrays vacíos (no rompe la web)
   const [servicios, franjasBD] = await Promise.all([
     prisma.servicio.findMany({ where: { activo: true }, orderBy: { createdAt: "asc" } }).catch(() => []),
