@@ -1,17 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { BUSINESS, SOBRE_MI } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { formatearFranjas, DIAS_SEMANA } from "@/lib/horarios";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 // Orden de visualización del horario: Lun → Sáb → Dom
 const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
 
 export default async function Home() {
-  await headers(); // Garantiza renderizado dinámico por petición (sin caché)
 
   // Servicios y horario desde BD — si falla, usa arrays vacíos (no rompe la web)
   const [servicios, franjasBD] = await Promise.all([
@@ -183,14 +181,14 @@ export default async function Home() {
           <div className="h-1 w-24 bg-primary" />
         </div>
         <div className="grid grid-cols-2 gap-2 px-4 md:hidden">
-          {["/galeria-1.png", "/galeria-2.png", "/galeria-3.png", "/galeria-4.png"].map((src, i) => (
+          {["/galeria-1.jpg", "/galeria-2.jpg", "/galeria-3.jpg", "/galeria-4.jpg"].map((src, i) => (
             <div key={i} className="aspect-[3/4] relative overflow-hidden group">
               <Image src={src} alt={`Corte ${i + 1} - ${BUSINESS.name}`} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
           ))}
         </div>
         <div className="hidden md:grid grid-cols-4 gap-3 px-4">
-          {["/galeria-1.png", "/galeria-2.png", "/galeria-3.png", "/galeria-4.png"].map((src, i) => (
+          {["/galeria-1.jpg", "/galeria-2.jpg", "/galeria-3.jpg", "/galeria-4.jpg"].map((src, i) => (
             <div key={i} className="aspect-[3/4] relative overflow-hidden group">
               <Image src={src} alt={`Corte ${i + 1} - ${BUSINESS.name}`} fill className="object-cover object-top group-hover:scale-105 transition-transform duration-700" />
             </div>

@@ -52,3 +52,19 @@ export function formatearFranjas(franjas: FranjaHoraria[]): string {
 }
 
 export const DIAS_SEMANA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+// Detecta si un slot (inicio + duracion) solapa con alguna cita existente.
+// Usa comparación de intervalos abiertos: [inicio, fin) vs [inicio, fin)
+export function hayConflicto(
+  slotHora: string,
+  slotDuracion: number,
+  citasExistentes: { hora: string; duracion: number }[]
+): boolean {
+  const slotInicio = timeToMinutes(slotHora);
+  const slotFin    = slotInicio + slotDuracion;
+  return citasExistentes.some(({ hora, duracion }) => {
+    const citaInicio = timeToMinutes(hora);
+    const citaFin    = citaInicio + duracion;
+    return citaInicio < slotFin && citaFin > slotInicio;
+  });
+}

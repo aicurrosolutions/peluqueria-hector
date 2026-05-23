@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generarSlots, timeToMinutes, HORARIO_DEFAULT } from "@/lib/horarios";
+import { generarSlots, hayConflicto, HORARIO_DEFAULT } from "@/lib/horarios";
 import { parseISO, startOfDay, endOfDay } from "date-fns";
 import { z } from "zod";
 
@@ -62,15 +62,9 @@ export async function GET(req: NextRequest) {
 
   const todosSlots = generarSlots(duracion, franjas);
 
-  const disponibles = todosSlots.filter((slotHora) => {
-    const slotInicio = timeToMinutes(slotHora);
-    const slotFin    = slotInicio + duracion;
-    return !citasDelDia.some((cita) => {
-      const citaInicio = timeToMinutes(cita.hora);
-      const citaFin    = citaInicio + cita.servicio.duracion;
-      return citaInicio < slotFin && citaFin > slotInicio;
-    });
-  });
+  const disponibles = todosSlots.filter((slotHora) =>
+    !hayConflicto(slotHora, duracion, citasDelDia.map((c) => ({ hora: c.hora, duracion: c.servicio.duracion })))
+  );
 
   return NextResponse.json({ slots: disponibles });
 }

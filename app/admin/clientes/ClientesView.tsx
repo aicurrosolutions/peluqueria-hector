@@ -5,9 +5,7 @@ import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Users, Star, TrendingDown, AlertTriangle, Moon, Sparkles, Search, Download, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { ClienteConStats } from "./page";
-
-type Categoria = ClienteConStats["categoria"];
+import type { ClienteConStats, Categoria } from "@/lib/types";
 type Filtro = "todos" | Categoria;
 
 const CATEGORIAS: { key: Categoria; label: string; desc: string; icon: React.ElementType; color: string; bg: string }[] = [

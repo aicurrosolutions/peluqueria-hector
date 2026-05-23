@@ -5,7 +5,7 @@ import { parseISO, startOfDay, endOfDay, subMinutes } from "date-fns";
 import { enviarConfirmacion, notificarBarber } from "@/lib/email";
 import { enviarPushNuevaCita } from "@/lib/push";
 import { logger } from "@/lib/logger";
-import { timeToMinutes } from "@/lib/horarios";
+import { hayConflicto } from "@/lib/horarios";
 import { z } from "zod";
 import { rlCitas, getIP, rateLimitResponse } from "@/lib/ratelimit";
 
@@ -131,16 +131,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar solapamiento real de intervalos
-    const nuevoInicio = timeToMinutes(hora);
-    const nuevoFin = nuevoInicio + servicio.duracion;
+    const conflicto = hayConflicto(
+      hora,
+      servicio.duracion,
+      citasDelDia.map((c) => ({ hora: c.hora, duracion: c.servicio.duracion }))
+    );
 
-    const hayConflicto = citasDelDia.some((cita) => {
-      const citaInicio = timeToMinutes(cita.hora);
-      const citaFin = citaInicio + cita.servicio.duracion;
-      return citaInicio < nuevoFin && citaFin > nuevoInicio;
-    });
-
-    if (hayConflicto) {
+    if (conflicto) {
       return NextResponse.json({ error: "Esta hora ya no está disponible" }, { status: 409 });
     }
 
