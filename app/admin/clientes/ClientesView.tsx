@@ -264,8 +264,9 @@ export default function ClientesView({ clientes }: { clientes: ClienteConStats[]
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-surface px-4 md:px-10 py-5 md:py-8 border-b border-outline/5">
-        <div className="flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-30 bg-surface px-4 md:px-10 py-4 md:py-8 border-b border-outline/5">
+        {/* Fila 1: título + botones */}
+        <div className="flex items-center justify-between gap-3">
           <div>
             <span className="text-primary text-[10px] font-bold tracking-[0.4em] uppercase mb-1 block font-label">
               CRM
@@ -274,8 +275,9 @@ export default function ClientesView({ clientes }: { clientes: ClienteConStats[]
               Clientes
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-surface-container border border-outline/15 px-3 py-2.5 w-48 md:w-64">
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Buscador solo en desktop */}
+            <div className="hidden md:flex items-center gap-2 bg-surface-container border border-outline/15 px-3 py-2.5 w-64">
               <Search size={13} className="text-outline shrink-0" />
               <input
                 type="text"
@@ -302,6 +304,17 @@ export default function ClientesView({ clientes }: { clientes: ClienteConStats[]
               <span className="hidden md:inline">CSV</span>
             </button>
           </div>
+        </div>
+        {/* Fila 2: buscador en mobile */}
+        <div className="md:hidden mt-3 flex items-center gap-2 bg-surface-container border border-outline/15 px-3 py-2.5">
+          <Search size={13} className="text-outline shrink-0" />
+          <input
+            type="text"
+            placeholder="Buscar…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="bg-transparent text-sm text-on-surface placeholder:text-outline focus:outline-none w-full"
+          />
         </div>
       </header>
 
