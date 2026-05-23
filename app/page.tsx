@@ -39,6 +39,10 @@ export default async function Home() {
       }))
     );
 
+  const mapsQuery = encodeURIComponent(`${BUSINESS.name}, ${BUSINESS.direccion}`);
+  const mapsEmbedUrl = `https://maps.google.com/maps?q=${mapsQuery}&output=embed&hl=es&z=16`;
+  const mapsLinkUrl  = `https://maps.google.com/maps?q=${mapsQuery}`;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "HairSalon",
@@ -50,20 +54,20 @@ export default async function Home() {
     priceRange: "€€",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "C. Martinetes, 7, Local 10",
-      postalCode: "41800",
-      addressLocality: "Sanlúcar la Mayor",
-      addressRegion: "Sevilla",
-      addressCountry: "ES",
+      streetAddress:   BUSINESS.calle,
+      postalCode:      BUSINESS.codigoPostal,
+      addressLocality: BUSINESS.localidad,
+      addressRegion:   BUSINESS.provincia,
+      addressCountry:  "ES",
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 37.3869,
-      longitude: -6.2024,
+      latitude:  BUSINESS.latitud,
+      longitude: BUSINESS.longitud,
     },
     sameAs: [`https://instagram.com/${BUSINESS.instagram}`],
     openingHoursSpecification: openingHours,
-    hasMap: `https://maps.google.com/?q=${encodeURIComponent(BUSINESS.direccion)}`,
+    hasMap: mapsLinkUrl,
     makesOffer: servicios.map((s) => ({
       "@type": "Offer",
       name: s.nombre,
@@ -200,7 +204,7 @@ export default async function Home() {
           <div className="relative w-full md:w-1/2 group shrink-0">
             <div className="absolute -top-4 -left-4 w-full h-full border border-primary opacity-20 group-hover:top-0 group-hover:left-0 transition-all duration-500" />
             <div className="w-full h-[500px] md:h-[600px] relative overflow-hidden">
-              <Image src="/hector.jpg" alt={BUSINESS.name} fill className="object-cover" />
+              <Image src={BUSINESS.fotoUrl} alt={BUSINESS.name} fill className="object-cover" unoptimized={BUSINESS.fotoUrl.startsWith("http")} />
             </div>
           </div>
           <div className="w-full md:w-1/2">
@@ -248,8 +252,8 @@ export default async function Home() {
 
           <div className="relative w-full overflow-hidden" style={{ paddingBottom: "45%" }}>
             <iframe
-              title="Ubicación Héctor Lacorte"
-              src="https://maps.google.com/maps?q=H%C3%A9ctor+Lacorte,+C.+Martinetes+7,+Sanl%C3%BAcar+la+Mayor,+Sevilla&output=embed&hl=es&z=16"
+              title={`Ubicación ${BUSINESS.name}`}
+              src={mapsEmbedUrl}
               className="absolute inset-0 w-full h-full border-0 grayscale contrast-125"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
@@ -266,7 +270,7 @@ export default async function Home() {
             <div className="bg-surface-container-low p-6 md:p-8">
               <p className="text-[10px] uppercase tracking-widest text-primary font-label font-bold mb-3">Dirección</p>
               <p className="text-sm font-body text-on-surface leading-relaxed">{BUSINESS.direccion}</p>
-              <a href={`https://maps.google.com/maps?q=H%C3%A9ctor+Lacorte,+C.+Martinetes+7,+Sanl%C3%BAcar+la+Mayor`} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-[10px] uppercase tracking-widest text-primary hover:underline font-label">
+              <a href={mapsLinkUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-3 text-[10px] uppercase tracking-widest text-primary hover:underline font-label">
                 Abrir en Google Maps →
               </a>
             </div>

@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
   // instead of index.js (standard library engine), causing P6001 errors at runtime.
   serverExternalPackages: ["@prisma/client", "prisma"],
   images: {
-    remotePatterns: [],
+    // Permite imágenes externas (foto del barbero vía URL, logos desde CDN, etc.)
+    remotePatterns: [{ protocol: "https", hostname: "**" }],
   },
 };
 

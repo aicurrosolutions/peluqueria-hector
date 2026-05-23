@@ -38,14 +38,33 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function hexToRgb(hex: string): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return "117, 91, 0";
+  return `${r}, ${g}, ${b}`;
+}
+
+function ThemeStyle() {
+  const primary          = process.env.NEXT_PUBLIC_COLOR_PRIMARY              ?? "#755B00";
+  const primaryDim       = process.env.NEXT_PUBLIC_COLOR_PRIMARY_DIM          ?? "#584400";
+  const primaryContainer = process.env.NEXT_PUBLIC_COLOR_PRIMARY_CONTAINER    ?? "#FFE08F";
+  const onPrimaryContainer = process.env.NEXT_PUBLIC_COLOR_ON_PRIMARY_CONTAINER ?? "#241A00";
+
+  const css = `:root{--color-primary:${primary};--color-primary-rgb:${hexToRgb(primary)};--color-primary-dim:${primaryDim};--color-primary-dim-rgb:${hexToRgb(primaryDim)};--color-primary-container:${primaryContainer};--color-primary-container-rgb:${hexToRgb(primaryContainer)};--color-on-primary-container:${onPrimaryContainer};--color-on-primary-container-rgb:${hexToRgb(onPrimaryContainer)}}`;
+
+  return <style dangerouslySetInnerHTML={{ __html: css }} />;
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${spaceGrotesk.variable} ${manrope.variable} dark`}>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <ThemeStyle />
+        {children}
+      </body>
     </html>
   );
 }

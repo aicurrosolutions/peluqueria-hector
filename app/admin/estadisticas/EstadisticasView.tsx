@@ -34,10 +34,10 @@ interface Props {
 
 type Tab = "estadisticas" | "calendario";
 
-// Colores del sistema de diseño
-const COLOR_PRIMARY   = "#755B00";
-const COLOR_SURFACE   = "#1E1A10";
-const COLOR_OUTLINE   = "rgba(255,255,255,0.15)";
+// Colores del sistema de diseño — primary desde env var para multi-tenant
+const COLOR_PRIMARY = process.env.NEXT_PUBLIC_COLOR_PRIMARY ?? "#755B00";
+const COLOR_SURFACE = "#1E1A10";
+const COLOR_OUTLINE = "rgba(255,255,255,0.15)";
 
 // ── Componente principal ───────────────────────────────────────────────────────
 
